@@ -1,2 +1,2 @@
 # SIA
-Repositório para a disciplina de Projeto Integrado I
+Repositório para a disciplina de Projeto Integrado I.
