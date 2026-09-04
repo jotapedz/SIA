@@ -14,7 +14,7 @@ O sistema tem como objetivo centralizar, organizar e proteger as informações n
 * Nicole Rabelo
 * Thayná Albano
 * Maria Sofia Peixoto
-* Kesia Rocha
+* Mayra Grazielly
 * João Pedro Lisboa
 
 ---
