@@ -494,13 +494,11 @@ A stack tecnológica ainda será definida pela equipe.
 
 | Camada             | Tecnologia                     |
 | ------------------ | ------------------------------ |
-| Front-end          | ______________________________ |
-| Back-end           | ______________________________ |
-| Banco de dados     | ______________________________ |
-| Autenticação       | ______________________________ |
-| Hospedagem         | ______________________________ |
-| Prototipação       | ______________________________ |
-| Controle de versão | ______________________________ |
+| Front-end          | React                          |
+| Back-end           | Python FastAPI                 |
+| Banco de dados     | Supabase Postgres              |
+| Prototipação       | Figma                          |
+| Controle de versão | Github                         |
 
 
 ## Estrutura  do projeto
@@ -518,7 +516,6 @@ sia/
 └── README.md
 ```
 
-A estrutura poderá ser modificada depois que a stack tecnológica for definida.
 
 ---
 
