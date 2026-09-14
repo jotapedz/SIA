@@ -50,7 +50,7 @@ O SIA busca centralizar essas informações em uma única plataforma, proporcion
 
 Para cada discente, poderão ser registradas informações acadêmicas e operacionais relacionadas às suas necessidades de acessibilidade. Os atendimentos realizados ficarão disponíveis em um histórico, permitindo acompanhar a evolução das demandas e as medidas que já foram adotadas.
 
-Quando for necessária uma articulação com professores ou outros setores da instituição, o Agente de Acessibilidade poderá registrar as orientações e os encaminhamentos realizados. Entretanto, professores, turmas e disciplinas não serão cadastrados como entidades do sistema nesta versão.
+
 
 ---
 
@@ -536,12 +536,4 @@ ______________________________________________
 # Execução do front-end:
 ______________________________________________
 
-# Execução dos testes:
-______________________________________________
-```
 
----
-
-## Licença
-
-A licença e as regras de utilização do projeto ainda serão definidas pela equipe e pela instituição responsável.
