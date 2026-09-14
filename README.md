@@ -128,7 +128,7 @@ Professores poderão receber orientações produzidas pelos Agentes de Acessibil
 
 | Identificador | Descrição                                                                                         | Prioridade | Dependência                  |
 | ------------- | ------------------------------------------------------------------------------------------------- | ---------: | ---------------------------- |
-| RF01          | O sistema deve permitir a navegação por meio de um menu.                                          |       Alta | RF04                         |
+| RF01          | *O sistema deve permitir a navegação por meio de um menu.*                                         |       Alta | RF04                         |
 | RF02          | O sistema deve permitir que usuários autorizados realizem login.                                  |       Alta | RF13                         |
 | RF03          | O sistema deve permitir a recuperação de senha.                                                   |       Alta | RF02                         |
 | RF04          | O sistema deve permitir o acesso à tela inicial.                                                  |       Alta | RF13                         |
@@ -151,95 +151,6 @@ Professores poderão receber orientações produzidas pelos Agentes de Acessibil
 | RF21          | O sistema deve permitir a classificação das demandas por categorias de acessibilidade.            |      Média | RF09                         |
 | RF22          | O sistema deve manter um histórico auditável das operações realizadas.                            |       Alta | RF05, RF07, RF10, RF11, RF14 |
 | RF23          | O sistema deve permitir a aplicação de filtros nas listagens de discentes, relatórios e usuários. |      Média | RF06, RF08, RF12             |
-
----
-
-## Regras de negócio
-
-### RN01 — Auditoria
-
-Os dados do sistema deverão ser auditáveis. Deve ser possível identificar:
-
-* O usuário responsável pela operação;
-* A data e o horário da operação;
-* A entidade alterada;
-* O registro afetado;
-* O tipo de operação realizada;
-* A origem e a autoria das informações.
-
-### RN02 — Minimização de dados sensíveis
-
-O sistema não deverá coletar informações clínicas que não sejam necessárias ao acompanhamento acadêmico.
-
-Não deverão ser armazenados:
-
-* Diagnósticos;
-* Histórico médico;
-* Descrições detalhadas de sintomas;
-* Laudos médicos genéricos;
-* Informações pessoais excessivas;
-* Relatos clínicos extensos.
-
-O sistema deverá registrar somente as informações necessárias para compreender a demanda acadêmica e definir ações de acessibilidade.
-
-### RN03 — Exclusão lógica
-
-Usuários e discentes não deverão ser excluídos definitivamente do banco de dados.
-
-Os registros deverão ser:
-
-* Editados;
-* Ativados;
-* Desativados;
-* Arquivados, quando aplicável.
-
-O cancelamento ou a desativação deverá preservar o histórico necessário para auditoria.
-
-### RN04 — Acessibilidade da plataforma
-
-A interface deverá ser acessível para pessoas com diferentes necessidades, deficiências ou limitações temporárias.
-
-### RN05 — Controle de acesso
-
-Somente usuários autorizados poderão consultar informações relacionadas aos estudantes e seus acompanhamentos.
-
-### RN06 — Finalidade acadêmica
-
-As informações armazenadas deverão ser utilizadas exclusivamente para o acompanhamento das demandas de inclusão e acessibilidade acadêmica.
-
-### RN07 — Termo de Ciência
-
-O Termo de Ciência deverá registrar:
-
-* O estudante relacionado;
-* O usuário responsável pelo registro;
-* A versão do termo;
-* A data de ciência;
-* A forma de aceite;
-* O status do termo.
-
-### RN08 — Histórico de alterações
-
-Alterações relevantes deverão gerar registros no histórico de auditoria. As informações anteriores não deverão ser substituídas sem que seja possível identificar a modificação realizada.
-
----
-
-## Requisitos não funcionais
-
-| Identificador | Descrição                                                                                                             | Categoria                  | Prioridade |
-| ------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------: |
-| RNF01         | Somente Agentes e membros autorizados da Coordenação de Acessibilidade poderão acessar as informações dos estudantes. | Segurança                  |       Alta |
-| RNF02         | A interface deverá possuir hierarquia visual intuitiva e navegação prática.                                           | Usabilidade                |       Alta |
-| RNF03         | Imagens, ícones e elementos visuais deverão possuir descrições e alternativas acessíveis.                             | Usabilidade/Acessibilidade |       Alta |
-| RNF04         | O sistema deverá permanecer disponível durante o horário de funcionamento definido pela instituição.                  | Disponibilidade            |       Alta |
-| RNF05         | O código deverá ser modularizado, organizado e documentado.                                                           | Manutenibilidade           |       Alta |
-| RNF06         | As principais interações deverão apresentar tempo de resposta de até dois segundos em condições normais de operação.  | Desempenho                 |       Alta |
-| RNF07         | O sistema deverá funcionar nos principais navegadores, incluindo Chrome, Edge e Firefox.                              | Portabilidade              |      Média |
-| RNF08         | O sistema deverá proteger senhas utilizando funções seguras de hash.                                                  | Segurança                  |       Alta |
-| RNF09         | O sistema deverá proteger as informações durante o armazenamento e a transmissão.                                     | Segurança                  |       Alta |
-| RNF10         | O sistema deverá seguir os princípios de minimização, finalidade e controle de acesso previstos na LGPD.              | Privacidade                |       Alta |
-| RNF11         | O sistema deverá apresentar mensagens de erro compreensíveis e não deverá revelar informações internas ou sensíveis.  | Segurança/Usabilidade      |      Média |
-| RNF12         | A interface deverá possibilitar a navegação por teclado e oferecer compatibilidade com tecnologias assistivas.        | Acessibilidade             |       Alta |
 
 ---
 
