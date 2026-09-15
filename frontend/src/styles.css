@@ -1,0 +1,99 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+:root {
+  color: #1a202c;
+  background: #f6f7f9;
+  font-family: "Plus Jakarta Sans", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-width: 320px; overflow: hidden; }
+
+button, input { font: inherit; }
+
+.app-shell { display: flex; flex-direction: column; height: 100dvh; background: #f6f7f9; overflow: hidden; }
+
+.site-header { display: flex; align-items: center; min-height: 70px; padding: 0 20px; background: #3563e9; }
+.site-header img { width: 73px; height: 27px; }
+
+.login-main, .in-progress-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 56px 20px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background-color: #f6f7f9;
+  background-image: url("/assets/login-background.svg");
+  background-position: center;
+  background-size: cover;
+}
+
+.login-card, .in-progress-card {
+  width: min(100%, 450px);
+  padding: 30px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgb(26 32 44 / 4%);
+}
+
+.login-card h1 { margin: 0 0 37px; color: #3563e9; font-size: 32px; font-weight: 800; letter-spacing: -0.96px; line-height: 1.5; }
+.login-card h2 { margin: 0 0 37px; color: #1a202c; font-size: 20px; font-weight: 800; line-height: 1.5; }
+
+.login-card form { display: flex; flex-direction: column; }
+.login-main::-webkit-scrollbar, .in-progress-main::-webkit-scrollbar { display: none; }
+
+.login-card label { margin-bottom: 9px; color: #1a202c; font-size: 15px; font-weight: 600; }
+.login-card input {
+  width: 100%;
+  height: 56px;
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid #90a3bf;
+  border-radius: 6px;
+  outline: none;
+  color: #1a202c;
+  font-size: 13px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.login-card input::placeholder { color: #90a3bf; }
+.login-card input:focus { border-color: #3563e9; box-shadow: 0 0 0 3px rgb(53 99 233 / 12%); }
+.login-card input.invalid { border-color: #fb7185; }
+
+.login-card input + label { margin-top: 37px; }
+.forgot-password { align-self: flex-start; margin: 14px 0 0; padding: 0; border: 0; background: transparent; color: #90a3bf; font-size: 12px; cursor: not-allowed; }
+.submit-button { align-self: center; width: 114px; height: 48px; margin-top: 37px; border: 0; border-radius: 3px; background: #3563e9; color: #ffffff; font-size: 12px; font-weight: 600; cursor: pointer; }
+.submit-button:disabled { background: #90a3bf; cursor: not-allowed; }
+.help-text { margin: 30px 0 0; color: #90a3bf; text-align: center; font-size: 11px; line-height: 1.5; }
+
+.login-error { display: grid; grid-template-columns: 15px 1fr; column-gap: 7px; row-gap: 5px; margin: -2px 0 20px; padding: 14px; border-radius: 6px; background: #f8d3d8; color: #1a202c; font-size: 11px; line-height: 1.45; }
+.login-error::before { content: "!"; display: grid; width: 15px; height: 15px; grid-row: span 2; place-items: center; border: 1px solid #ef4444; border-radius: 50%; color: #ef4444; font-size: 10px; font-weight: 800; }
+.login-error strong { font-size: 13px; }
+.login-error span { padding: 0; }
+
+.site-footer { min-height: 160px; padding: 20px; background: #3563e9; color: #ffffff; }
+.footer-logo { display: block; width: 130px; height: 48px; margin-bottom: 12px; }
+.site-footer address { font-size: 10px; font-style: normal; line-height: 1.5; }
+.site-footer p { display: flex; max-width: 270px; margin: 4px 0; }
+.site-footer p img { width: 15px; height: 15px; flex: 0 0 15px; margin-right: 4px; }
+
+.in-progress-card { padding: 48px 20px; text-align: center; }
+.in-progress-card h1 { margin: 0; color: #3563e9; font-size: 24px; font-weight: 800; }
+
+@media (min-width: 768px) {
+  .site-header { min-height: 70px; padding-inline: 32px; }
+  .login-main, .in-progress-main { padding-block: 56px; }
+  .login-card { padding: 30px; }
+  .login-card h1 { font-size: 32px; }
+  .site-footer { min-height: 160px; padding: 24px 32px; }
+}
+
+@media (min-width: 1200px) {
+  .site-header { padding-inline: 20px; }
+  .login-card { width: 450px; }
+  .login-card h1 { font-size: 32px; }
+  .site-footer { padding-inline: 20px; }
+}

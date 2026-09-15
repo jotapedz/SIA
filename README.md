@@ -432,19 +432,38 @@ sia/
 
 ## Execução do projeto
 
-As instruções de instalação e execução serão adicionadas após a definição das tecnologias utilizadas.
+Atualmente, a interface de login está disponível no diretório `frontend/`. Ela utiliza React com Vite e simula a autenticação localmente até a integração com FastAPI e Supabase Auth.
+
+### Pré-requisito
+
+* Node.js `16.20.2`;
+* npm, instalado junto com o Node.js.
 
 ```bash
-# Comandos de instalação:
-______________________________________________
+# Acesse o front-end
+cd frontend
 
-# Configuração das variáveis de ambiente:
-______________________________________________
+# Instale as dependências
+npm install
 
-# Execução do back-end:
-______________________________________________
+# Inicie o servidor de desenvolvimento
+npm run dev
 
-# Execução do front-end:
-______________________________________________
+# Gere o build de producao
+npm run build
+```
+
+O Vite informará no terminal o endereço local para acessar a aplicação durante o desenvolvimento.
+
+### Credenciais de demonstração
+
+Enquanto a integração com o back-end não estiver disponível, o login é apenas uma simulação no navegador. Use as credenciais abaixo para acessar a tela temporária `IN PROGRESS`:
+
+| Campo | Valor |
+| ----- | ----- |
+| E-mail | `teste@sia.ufc.br` |
+| Senha | `teste@123` |
+
+Qualquer outra combinação de credenciais apresentará a mensagem de erro da tela de login. Essas credenciais não são reais e serão removidas quando o Supabase Auth for integrado.
 
 
