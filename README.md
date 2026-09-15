@@ -126,31 +126,30 @@ Professores poderão receber orientações produzidas pelos Agentes de Acessibil
 
 ## Requisitos funcionais
 
-| Identificador | Descrição                                                                                         | Prioridade | Dependência                  |
-| ------------- | ------------------------------------------------------------------------------------------------- | ---------: | ---------------------------- |
-| RF01          | *O sistema deve permitir a navegação por meio de um menu.*                                         |       Alta | RF04                         |
-| RF02          | O sistema deve permitir que usuários autorizados realizem login.                                  |       Alta | RF13                         |
-| RF03          | O sistema deve permitir a recuperação de senha.                                                   |       Alta | RF02                         |
-| RF04          | O sistema deve permitir o acesso à tela inicial.                                                  |       Alta | RF13                         |
-| RF05          | O sistema deve permitir o cadastro de discentes.                                                  |       Alta | RF04                         |
-| RF06          | O sistema deve permitir a visualização das informações de um discente.                            |      Média | RF05                         |
-| RF07          | O sistema deve permitir a edição das informações de um discente.                                  |      Média | RF05                         |
-| RF08          | O sistema deve permitir a visualização de relatórios.                                             |      Média | RF09                         |
-| RF09          | O sistema deve permitir adicionar relatórios.                                                     |       Alta | RF04                         |
-| RF10          | O sistema deve permitir editar relatórios.                                                        |      Média | RF09                         |
-| RF11          | O sistema deve permitir cancelar ou desativar relatórios.                                         |      Média | RF09                         |
-| RF12          | O sistema deve permitir visualizar os usuários cadastrados.                                       |      Média | RF13                         |
-| RF13          | O sistema deve permitir o cadastro de usuários.                                                   |       Alta | —                            |
-| RF14          | O sistema deve permitir editar as informações dos usuários.                                       |      Média | RF13                         |
-| RF15          | O sistema deve permitir que o usuário visualize o próprio perfil.                                 |      Média | RF04                         |
-| RF16          | O sistema deve permitir a alteração do e-mail.                                                    |      Baixa | RF14                         |
-| RF17          | O sistema deve permitir a alteração da senha.                                                     |      Baixa | RF14                         |
-| RF18          | O sistema deve permitir o registro de atendimentos e contribuições.                               |       Alta | RF05                         |
-| RF19          | O sistema deve permitir a consulta do histórico de acompanhamento do discente.                    |       Alta | RF05, RF18                   |
-| RF20          | O sistema deve permitir o registro do Termo de Ciência.                                           |       Alta | RF05                         |
-| RF21          | O sistema deve permitir a classificação das demandas por categorias de acessibilidade.            |      Média | RF09                         |
-| RF22          | O sistema deve manter um histórico auditável das operações realizadas.                            |       Alta | RF05, RF07, RF10, RF11, RF14 |
-| RF23          | O sistema deve permitir a aplicação de filtros nas listagens de discentes, relatórios e usuários. |      Média | RF06, RF08, RF12             |
+| Identificador | Descrição                                                                                                                                                                                                          | Prioridade | Status |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------: | ------ |
+| **RF01**      | **O Agente de Acessibilidade** deve realizar login **por meio do preenchimento de suas credenciais**, **para acessar as funcionalidades do sistema**.                                                              |       Alta |        |
+| **RF02**      | **O Agente de Acessibilidade** deve recuperar sua senha **por meio do fluxo de recuperação de senha**, **para restabelecer seu acesso ao sistema**.                                                                |       Alta |        |
+| **RF03**      | **O Agente de Acessibilidade** deve acessar a tela inicial **após realizar o login**, **para visualizar as funcionalidades disponíveis**.                                                                          |       Alta |        |
+| **RF04**      | **O Agente de Acessibilidade** deve cadastrar discentes **por meio de um formulário de cadastro**, **para registrar os discentes no sistema**.                                                                     |       Alta |        |
+| **RF05**      | **O Agente de Acessibilidade** deve visualizar as informações de um discente **por meio da consulta ao seu cadastro**, **para obter informações sobre o discente**.                                                |      Média |        |
+| **RF06**      | **O Agente de Acessibilidade** deve editar as informações de um discente **por meio da funcionalidade de edição**, **para manter seus dados atualizados**.                                                         |      Média |        |
+| **RF07**      | **O Agente de Acessibilidade** deve visualizar os relatórios **por meio da listagem e consulta dos registros**, **para acompanhar as informações relacionadas aos discentes**.                                     |      Média |        |
+| **RF08**      | **O Agente de Acessibilidade** deve adicionar relatórios **por meio de um formulário de registro**, **para documentar informações relacionadas ao acompanhamento dos discentes**.                                  |       Alta |        |
+| **RF09**      | **O Agente de Acessibilidade** deve editar relatórios **por meio da funcionalidade de edição**, **para corrigir ou atualizar informações registradas**.                                                            |      Média |        |
+| **RF10**      | **O Agente de Acessibilidade** deve cancelar ou desativar relatórios **por meio da funcionalidade de gerenciamento dos registros**, **para impedir que relatórios inválidos ou não aplicáveis permaneçam ativos**. |      Média |        |
+| **RF11**      | **O Agente de Acessibilidade** deve visualizar os usuários cadastrados **por meio da listagem de usuários**, **para consultar os usuários registrados no sistema**.                                                |      Média |        |
+| **RF12**      | **O Agente de Acessibilidade** deve cadastrar usuários **por meio de um formulário de cadastro**, **para conceder acesso ao sistema a novos usuários**.                                                            |       Alta |        |
+| **RF13**      | **O Agente de Acessibilidade** deve editar as informações dos usuários **por meio da funcionalidade de edição**, **para manter seus dados atualizados**.                                                           |      Média |        |
+| **RF14**      | **O Agente de Acessibilidade** deve visualizar seu próprio perfil **por meio da área de perfil**, **para consultar seus dados cadastrados e informações de acesso**.                                               |      Média |        |
+| **RF15**      | **O Agente de Acessibilidade** deve alterar seu e-mail **por meio da área de gerenciamento do perfil**, **para manter seu endereço de e-mail atualizado**.                                                         |      Baixa |        |
+| **RF16**      | **O Agente de Acessibilidade** deve alterar sua senha **por meio da área de gerenciamento do perfil**, **para manter a segurança de suas credenciais de acesso**.                                                  |      Baixa |        |
+| **RF17**      | **O Agente de Acessibilidade** deve registrar atendimentos e contribuições **por meio de um formulário de registro**, **para documentar as ações realizadas no acompanhamento dos discentes**.                     |       Alta |        |
+| **RF18**      | **O Agente de Acessibilidade** deve consultar o histórico de acompanhamento de um discente **por meio da área de histórico**, **para acompanhar os registros realizados durante seu atendimento**.                 |       Alta |        |
+| **RF19**      | **O Agente de Acessibilidade** deve registrar o Termo de Ciência **por meio da funcionalidade de registro do documento**, **para documentar a ciência do discente**.                                               |       Alta |        |
+| **RF20**      | **O Agente de Acessibilidade** deve classificar as demandas dos discentes **por meio da seleção de categorias de acessibilidade**, **para organizar e identificar suas necessidades de acessibilidade**.           |      Média |        |
+| **RF21**      | **O sistema** deve registrar as operações realizadas pelo **Agente de Acessibilidade** **por meio de um histórico de auditoria**, **para possibilitar o rastreamento das ações executadas**.                       |       Alta |        |
+| **RF22**      | **O Agente de Acessibilidade** deve filtrar as listagens de discentes, relatórios e usuários **por meio de critérios de busca e filtragem**, **para localizar registros específicos com maior facilidade**.        |      Média |        |
 
 ---
 
