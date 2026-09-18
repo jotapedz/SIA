@@ -432,38 +432,75 @@ sia/
 
 ## Execução do projeto
 
-Atualmente, a interface de login está disponível no diretório `frontend/`. Ela utiliza React com Vite e simula a autenticação localmente até a integração com FastAPI e Supabase Auth.
+O login utiliza React, Supabase Auth, FastAPI e Supabase Postgres. O frontend autentica o usuário no Supabase e envia o token de acesso ao FastAPI para validar o perfil autorizado.
 
 ### Pré-requisito
 
 * Node.js `16.20.2`;
 * npm, instalado junto com o Node.js.
+* Python `3.11`;
+* Um projeto Supabase com autenticação por e-mail habilitada.
+
+No Windows, instale o Python 3.11 pelo site oficial e marque a opção para adicionar o Python ao `PATH`. O comando `py -3.11 --version` deve funcionar antes de configurar o backend.
 
 ```bash
-# Acesse o front-end
+# Instale e inicie o front-end
 cd frontend
-
-# Instale as dependências
 npm install
-
-# Inicie o servidor de desenvolvimento
 npm run dev
-
-# Gere o build de producao
-npm run build
 ```
 
 O Vite informará no terminal o endereço local para acessar a aplicação durante o desenvolvimento.
 
-### Credenciais de demonstração
+### Configuração do Supabase
 
-Enquanto a integração com o back-end não estiver disponível, o login é apenas uma simulação no navegador. Use as credenciais abaixo para acessar a tela temporária `IN PROGRESS`:
+1. Em **Authentication > Providers**, habilite o provedor **Email**.
+2. No **SQL Editor**, execute o conteúdo de `database/migrations/0001_perfil_auth.sql`.
+3. Em **Authentication > Users**, crie o usuário inicial.
+4. No **Table Editor**, crie ou localize o registro correspondente em `Perfil`.
+5. Defina o `tipo_perfil` pelo Table Editor e vincule o registro de `Perfil` ao usuário do Supabase, ativando-o pelo SQL Editor:
 
-| Campo | Valor |
-| ----- | ----- |
-| E-mail | `teste@sia.ufc.br` |
-| Senha | `teste@123` |
+```sql
+UPDATE public."Perfil" AS perfil
+SET auth_user_id = usuario.id,
+    is_active = TRUE
+FROM auth.users AS usuario
+WHERE perfil.email = usuario.email
+  AND usuario.email = 'teste@sia.ufc.br';
+```
 
-Qualquer outra combinação de credenciais apresentará a mensagem de erro da tela de login. Essas credenciais não são reais e serão removidas quando o Supabase Auth for integrado.
+O campo `tipo_perfil` continua sendo gerenciado na tabela `Perfil`. O backend usa `auth_user_id` para localizar o perfil e `is_active` para liberar ou bloquear acesso. O campo `senha_hash` não é usado pelo sistema, pois o Supabase Auth mantém as senhas com segurança.
+
+### Variáveis de ambiente
+
+O arquivo `frontend/.env` contém a configuração local do Supabase e não é versionado. Use `frontend/.env.example` como referência:
+
+```env
+VITE_SUPABASE_URL=https://jkodhibwdjwcfiicbjyk.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+Para o backend, crie `backend/.env` a partir de `backend/.env.example`. Use a URL do **Session pooler** em **Connect** no Supabase quando sua rede não tiver IPv6:
+
+```env
+SUPABASE_URL=https://jkodhibwdjwcfiicbjyk.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
+DATABASE_URL=postgresql+asyncpg://postgres:sua_senha@host:porta/postgres
+```
+
+Não adicione a senha do banco, chave `sb_secret` ou chave `service_role` ao frontend ou ao Git.
+
+### Execução do backend
+
+```powershell
+cd backend
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Com o backend em execução, `GET http://localhost:8000/health` deve retornar `{"status":"ok"}`. O endpoint `GET /v1/me` exige o token Bearer emitido pelo Supabase e retorna `403` para usuários inativos ou sem perfil autorizado.
 
 
