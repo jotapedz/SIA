@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "./lib/supabase";
 import "./styles.css";
 
-const DEMO_EMAIL = "teste@sia.ufc.br";
-const DEMO_PASSWORD = "teste@123";
-const SESSION_KEY = "sia-demo-session";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 function navigate(path: string) {
   window.history.pushState({}, "", path);
@@ -31,7 +31,11 @@ function Footer() {
   );
 }
 
-function LoginPage() {
+type LoginPageProps = {
+  onAuthenticated: (session: Session) => Promise<boolean>;
+};
+
+function LoginPage({ onAuthenticated }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [hasCredentialError, setHasCredentialError] = useState(false);
@@ -39,19 +43,20 @@ function LoginPage() {
   const isEmailValid = /^\S+@\S+\.\S+$/.test(email);
   const canSubmit = isEmailValid && password.length > 0 && !isSubmitting;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
 
     setIsSubmitting(true);
     setHasCredentialError(false);
 
-    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-      window.sessionStorage.setItem(SESSION_KEY, "true");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error && data.session && await onAuthenticated(data.session)) {
       navigate("/in-progress");
       return;
     }
 
+    await supabase.auth.signOut();
     setIsSubmitting(false);
     setHasCredentialError(true);
   }
@@ -117,6 +122,28 @@ function InProgressPage() {
 
 function App() {
   const [path, setPath] = useState(window.location.pathname);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  async function checkSession(nextSession: Session | null): Promise<boolean> {
+    setSession(nextSession);
+    if (!nextSession) {
+      setIsAuthorized(false);
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/v1/me`, {
+        headers: { Authorization: `Bearer ${nextSession.access_token}` },
+      });
+      const authorized = response.ok;
+      setIsAuthorized(authorized);
+      return authorized;
+    } catch {
+      setIsAuthorized(false);
+      return false;
+    }
+  }
 
   useEffect(() => {
     const onPopState = () => setPath(window.location.pathname);
@@ -124,7 +151,15 @@ function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const isAuthenticated = window.sessionStorage.getItem(SESSION_KEY) === "true";
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => checkSession(data.session));
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void checkSession(nextSession);
+    });
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  const isAuthenticated = session !== null && isAuthorized;
   const isInProgress = path === "/in-progress";
 
   useEffect(() => {
@@ -134,7 +169,7 @@ function App() {
   return (
     <div className="app-shell">
       <Header />
-      {isInProgress && isAuthenticated ? <InProgressPage /> : <LoginPage />}
+      {isInProgress && isAuthenticated ? <InProgressPage /> : <LoginPage onAuthenticated={checkSession} />}
       <Footer />
     </div>
   );
