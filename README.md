@@ -351,20 +351,7 @@ O modelo de dados do SIA é composto pelas seguintes entidades principais:
 | `TermoCiencia`            | Registra a ciência do estudante sobre o acompanhamento.       |
 | `HistoricoAcesso`         | Registra as operações realizadas no sistema.                  |
 
-### Relacionamentos principais
 
-* Um perfil pode criar vários relatórios;
-* Um perfil pode registrar várias contribuições;
-* Um perfil pode registrar vários Termos de Ciência;
-* Um perfil pode possuir vários registros no histórico;
-* Um discente pode possuir vários relatórios;
-* Um discente pode possuir vários Termos de Ciência;
-* Um relatório pode possuir várias contribuições;
-* Um relatório pode possuir várias categorias;
-* Uma categoria pode estar relacionada a vários relatórios.
-
-
----
 
 ## Fluxo básico de utilização
 
@@ -471,6 +458,8 @@ WHERE perfil.email = usuario.email
 
 O campo `tipo_perfil` continua sendo gerenciado na tabela `Perfil`. O backend usa `auth_user_id` para localizar o perfil e `is_active` para liberar ou bloquear acesso. O campo `senha_hash` não é usado pelo sistema, pois o Supabase Auth mantém as senhas com segurança.
 
+Para a recuperação de senha local, em **Authentication > URL Configuration**, configure o **Site URL** como `http://localhost:5173` e inclua `http://localhost:5173/redefinir-senha` em **Redirect URLs**. Em produção, inclua a URL publicada equivalente.
+
 ### Variáveis de ambiente
 
 O arquivo `frontend/.env` contém a configuração local do Supabase e não é versionado. Use `frontend/.env.example` como referência:
@@ -489,7 +478,6 @@ SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
 DATABASE_URL=postgresql+asyncpg://postgres:sua_senha@host:porta/postgres
 ```
 
-Não adicione a senha do banco, chave `sb_secret` ou chave `service_role` ao frontend ou ao Git.
 
 ### Execução do backend
 
@@ -500,7 +488,3 @@ py -3.11 -m venv .venv
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
-
-Com o backend em execução, `GET http://localhost:8000/health` deve retornar `{"status":"ok"}`. O endpoint `GET /v1/me` exige o token Bearer emitido pelo Supabase e retorna `403` para usuários inativos ou sem perfil autorizado.
-
-
