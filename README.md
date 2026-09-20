@@ -16,6 +16,7 @@ O sistema tem como objetivo centralizar, organizar e proteger as informações n
 * Maria Sofia Peixoto
 * Mayra Grazielly
 * João Pedro Lisboa
+* Liz Maciel Lopes
 
 ---
 
