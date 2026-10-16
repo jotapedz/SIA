@@ -440,8 +440,10 @@ O Vite informará no terminal o endereço local para acessar a aplicação duran
 
 ### Configuração do Supabase
 
+No ambiente de desenvolvimento compartilhado, o perfil de teste descrito abaixo já está criado. As instruções seguintes servem para preparar outro ambiente a partir das tabelas existentes.
+
 1. Em **Authentication > Providers**, habilite o provedor **Email**.
-2. No **SQL Editor**, execute o conteúdo de `database/migrations/0001_perfil_auth.sql`.
+2. No **SQL Editor**, execute, nesta ordem, `database/migrations/0001_perfil_auth.sql` e `database/migrations/0002_discente.sql`. A segunda migração complementa a tabela `Discente` existente, sem recriá-la.
 3. Em **Authentication > Users**, crie o usuário inicial.
 4. No **Table Editor**, crie ou localize o registro correspondente em `Perfil`.
 5. Defina o `tipo_perfil` pelo Table Editor e vincule o registro de `Perfil` ao usuário do Supabase, ativando-o pelo SQL Editor:
@@ -452,14 +454,35 @@ SET auth_user_id = usuario.id,
     is_active = TRUE
 FROM auth.users AS usuario
 WHERE perfil.email = usuario.email
-  AND usuario.email = 'teste@sia.ufc.br';
+  AND usuario.email = 'teste.sia@example.org';
 ```
 
 O campo `tipo_perfil` continua sendo gerenciado na tabela `Perfil`. O backend usa `auth_user_id` para localizar o perfil e `is_active` para liberar ou bloquear acesso. O campo `senha_hash` não é usado pelo sistema, pois o Supabase Auth mantém as senhas com segurança.
 
+### Perfil disponível para testes
+
+Com o backend e o frontend em execução, acesse `http://localhost:5173` e utilize a conta temporária:
+
+| Campo | Valor |
+| ----- | ----- |
+| E-mail | `teste.sia@example.org` |
+| Senha temporária | `Sia!XQjz14X8jaZr16l6qgI7a` |
+| Perfil | `AGENTE_ACESSIBILIDADE` |
+| Situação | Ativo, com e-mail confirmado no Supabase Auth |
+
+Após o login, é possível testar a listagem, a busca, os filtros e o cadastro de discentes, com ou sem contato familiar. Ao repetir uma matrícula, o sistema deve informar que ela já está cadastrada.
+
+> Conta exclusiva para desenvolvimento e testes com dados fictícios. As credenciais acima estão publicadas neste repositório: não utilize essa conta em produção nem em um ambiente com dados reais. Troque a senha ou desative o perfil ao encerrar os testes.
+
+O endereço `example.org` é fictício e não recebe mensagens. Para testar a recuperação de senha, utilize outra conta com uma caixa de e-mail acessível. A senha de login acima não é a senha de conexão com o banco de dados.
+
+### Recuperação de senha
+
 Para a recuperação de senha local, em **Authentication > URL Configuration**, configure o **Site URL** como `http://localhost:5173` e inclua `http://localhost:5173/redefinir-senha` em **Redirect URLs**. Em produção, inclua a URL publicada equivalente.
 
 ### Variáveis de ambiente
+
+Os arquivos `frontend/.env`, `backend/.env` e `opencode.json` são locais e estão no `.gitignore`. Não publique senhas do banco ou chaves secretas do Supabase nesses arquivos nem em outros arquivos versionados.
 
 O arquivo `frontend/.env` contém a configuração local do Supabase e não é versionado. Use `frontend/.env.example` como referência:
 

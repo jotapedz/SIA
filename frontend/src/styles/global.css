@@ -1,6 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 :root {
+  --color-primary: #3563e9;
+  --color-text: #1a202c;
+  --color-muted: #90a3bf;
   color: #1a202c;
   background: #f6f7f9;
   font-family: "Plus Jakarta Sans", Arial, sans-serif;
@@ -10,7 +13,12 @@
 
 body { margin: 0; min-width: 320px; }
 
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #90a3bf; outline-offset: 4px; }
+.skip-link { position: fixed; z-index: 20; top: -80px; left: 16px; padding: 12px; background: white; color: #1a202c; }
+.skip-link:focus { top: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.auth-action-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 
 .app-shell { display: flex; flex-direction: column; min-height: 100dvh; background: #f6f7f9; }
 
@@ -21,6 +29,8 @@ button, input { font: inherit; }
 .breadcrumb-item { display: inline-flex; align-items: center; }
 .breadcrumb button { padding: 0; border: 0; background: transparent; color: #90a3bf; cursor: pointer; }
 .breadcrumb button:hover { color: #3563e9; }
+.breadcrumb a { color: inherit; text-decoration: none; }
+.breadcrumb a:hover { color: #3563e9; }
 .breadcrumb-item:last-child { color: #566781; font-weight: 600; }
 .breadcrumb-separator { margin: 0 9px; color: #90a3bf; font-size: 28px; font-weight: 400; line-height: 1; }
 
@@ -46,6 +56,7 @@ button, input { font: inherit; }
 
 .forgot-password { align-self: flex-start; margin: 14px 0 0; padding: 0; border: 0; background: transparent; color: #90a3bf; font-size: 12px; cursor: pointer; }
 .forgot-password:hover { color: #3563e9; text-decoration: underline; }
+.forgot-password { text-decoration: none; }
 .submit-button { align-self: center; width: 114px; height: 48px; margin-top: 37px; border: 0; border-radius: 3px; background: #3563e9; color: #ffffff; font-size: 12px; font-weight: 600; cursor: pointer; }
 .submit-button:disabled, .primary-button:disabled { background: #90a3bf; cursor: not-allowed; }
 .help-text { margin: 30px 0 0; color: #90a3bf; text-align: center; font-size: 10px; line-height: 1.5; }
