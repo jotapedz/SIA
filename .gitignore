@@ -3,7 +3,6 @@ frontend/node_modules/
 frontend/dist/
 
 # Local environment configuration
-/opencode.json
 frontend/.env
 frontend/.env.*
 !frontend/.env.example

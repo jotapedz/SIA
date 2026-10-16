@@ -482,7 +482,7 @@ Para a recuperação de senha local, em **Authentication > URL Configuration**, 
 
 ### Variáveis de ambiente
 
-Os arquivos `frontend/.env`, `backend/.env` e `opencode.json` são locais e estão no `.gitignore`. Não publique senhas do banco ou chaves secretas do Supabase nesses arquivos nem em outros arquivos versionados.
+Os arquivos `frontend/.env` e `backend/.env` são locais e estão no `.gitignore`. Não publique senhas do banco ou chaves secretas do Supabase nesses arquivos nem em outros arquivos versionados.
 
 O arquivo `frontend/.env` contém a configuração local do Supabase e não é versionado. Use `frontend/.env.example` como referência:
 
