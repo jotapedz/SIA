@@ -1,0 +1,22 @@
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 20px; border: 0; border-radius: 4px; font: inherit; font-size: 16px; font-weight: 600; line-height: 24px; cursor: pointer; }
+.button img { flex-shrink: 0; }
+.primary { background: var(--color-primary); color: white; }
+.primary:not(:disabled):hover { background: #2854d8; }
+.text { background: transparent; color: var(--color-text); }
+.text:not(:disabled):hover { color: var(--color-primary); background: #edf2ff; }
+.button:disabled { cursor: not-allowed; }
+.primary:disabled { background: rgb(53 99 233 / 50%); }
+.text:disabled { opacity: .5; }
+.field { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
+.field label { font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.32px; }
+.field input, .field select { width: 100%; min-width: 0; height: 56px; padding: 15px; border: 1px solid var(--color-muted); border-radius: 10px; background: white; color: var(--color-text); font: inherit; font-size: 14px; }
+.field input::placeholder { color: var(--color-muted); }
+.field select { appearance: none; padding-right: 48px; }
+.selectControl { position: relative; }
+.selectControl img { position: absolute; top: 16px; right: 15px; transform: rotate(-90deg); pointer-events: none; }
+.field input[type='date'] { padding-right: 14px; }
+.field input[type='date']::-webkit-calendar-picker-indicator { width: 24px; height: 24px; background: url('/assets/calendar.svg') center / 24px 24px; }
+.field input:focus, .field select:focus { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.field input[aria-invalid='true'] { border-color: #b42318; }
+.error { color: #b42318; font-size: 13px; line-height: 1.5; }
+.hint { color: #566781; font-size: 13px; line-height: 1.5; }
