@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import styles from "./Modal.module.css";
 
-export function Modal({ title, busy = false, onClose, children }: {
-  title: string; busy?: boolean; onClose: () => void; children: ReactNode;
+export function Modal({ title, busy = false, compact = false, onClose, children }: {
+  title: string; busy?: boolean; compact?: boolean; onClose: () => void; children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -19,7 +19,7 @@ export function Modal({ title, busy = false, onClose, children }: {
     };
   }, []);
   return (
-    <dialog ref={ref} className={styles.dialog} aria-labelledby="modal-title" aria-busy={busy}
+    <dialog ref={ref} className={`${styles.dialog} ${compact ? styles.compact : ""}`} aria-labelledby="modal-title" aria-busy={busy}
       onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }}>
       <h2 id="modal-title" className={styles.title}>{title}</h2>
       {children}

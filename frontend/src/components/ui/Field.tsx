@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 import styles from "./Controls.module.css";
 
 type Props = InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; hint?: string };
@@ -23,5 +23,17 @@ export function SelectField({ id, label, children, value, onChange }: {
       <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>{children}</select>
       <img src="/assets/chevron.svg" width="24" height="24" alt="" />
     </div>
+  </div>;
+}
+
+export function TextareaField({ label, error, hint, id, required, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  label: string; error?: string; hint?: string;
+}) {
+  return <div className={styles.field}>
+    <label htmlFor={id}>{label}{required && <span aria-hidden="true"> *</span>}</label>
+    <textarea id={id} required={required} aria-invalid={!!error}
+      aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined} {...props} />
+    {error ? <span id={`${id}-error`} className={styles.error}>{error}</span>
+      : hint && <span id={`${id}-hint`} className={styles.hint}>{hint}</span>}
   </div>;
 }

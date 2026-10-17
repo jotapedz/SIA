@@ -8,7 +8,10 @@ export function AppLayout({ authenticated = false }: { authenticated?: boolean }
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
-    const title = pathname.startsWith("/discentes") ? "Discentes"
+    const title = pathname.includes("/relatorios/novo") ? "Adicionar relatório"
+      : pathname.startsWith("/relatorios/") ? "Relatório"
+      : pathname.startsWith("/discentes/") ? "Discente"
+      : pathname === "/discentes" ? "Discentes"
       : pathname.startsWith("/esqueci-senha") ? "Recuperar senha"
         : pathname.startsWith("/redefinir-senha") ? "Redefinir senha" : "Login";
     document.title = `${title} — SIA`;

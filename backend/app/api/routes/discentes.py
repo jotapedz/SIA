@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,18 +13,21 @@ from app.schemas.discente import (
     DiscenteResponse,
     DiscenteStatus,
     DiscenteSummary,
+    DiscenteUpdate,
+    validate_discente_dates,
 )
 from app.schemas.profile import ProfileResponse
+from app.services.discentes import (
+    DETAIL_COLUMNS,
+    SUMMARY_COLUMNS,
+    discente_parameters,
+    discente_response,
+    get_discente_or_404,
+    is_duplicate_registration,
+)
 
 
 router = APIRouter(prefix="/v1/discentes", tags=["discentes"])
-
-
-SUMMARY_COLUMNS = """
-    id_discente AS id, nome AS full_name, nome_social AS social_name,
-    matricula AS registration_number, curso AS course, turno AS shift,
-    status, data_ingresso AS admission_date
-"""
 
 
 @router.get(
@@ -117,16 +120,8 @@ async def create_discente(
     profile: ProfileResponse = Depends(get_authorized_profile),
     session: AsyncSession = Depends(get_db_session),
 ) -> DiscenteResponse:
-    parameters = data.model_dump(exclude={"family_contact"})
+    parameters = discente_parameters(data.model_dump())
     parameters["status"] = data.status.value
-    contact = data.family_contact
-    parameters.update(
-        family_name=contact.full_name if contact else None,
-        family_relationship=contact.relationship if contact else None,
-        family_phone=contact.phone if contact else None,
-        family_email=str(contact.email) if contact and contact.email else None,
-        family_notes=contact.notes if contact else None,
-    )
     try:
         result = await session.execute(
             text(
@@ -142,26 +137,85 @@ async def create_discente(
                      :admission_date, :email, :phone, :birth_date,
                      :family_name, :family_relationship, :family_phone, :family_email, :family_notes,
                      NOW(), NOW())
-                RETURNING {SUMMARY_COLUMNS}, email_institucional AS email, telefone AS phone,
-                          data_nascimento AS birth_date, data_criacao AS created_at,
-                          data_atualizacao AS updated_at
+                RETURNING {DETAIL_COLUMNS}
                 """
             ),
             parameters,
         )
-        discente = DiscenteResponse(**result.mappings().one(), family_contact=contact)
+        discente = discente_response(result.mappings().one())
         await session.commit()
     except IntegrityError as error:
         await session.rollback()
         # A restrição UNIQUE também protege contra cadastros simultâneos.
-        cause = getattr(error.orig, "__cause__", None)
-        constraint = getattr(cause, "constraint_name", None) or getattr(
-            error.orig, "constraint_name", None
-        )
-        if constraint == "discente_matricula_key":
+        if is_duplicate_registration(error):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Já existe um discente cadastrado com esta matrícula.",
             ) from error
         raise
     return discente
+
+
+@router.get(
+    "/{discente_id}", response_model=DiscenteResponse,
+    summary="Consultar cadastro do discente (RF05)",
+    responses={404: {"description": "Discente não encontrado"}},
+)
+async def get_discente(
+    discente_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> DiscenteResponse:
+    return await get_discente_or_404(session, discente_id)
+
+
+@router.patch(
+    "/{discente_id}", response_model=DiscenteResponse,
+    summary="Atualizar cadastro do discente (RF06)",
+    responses={
+        404: {"description": "Discente não encontrado"},
+        409: {"description": "Matrícula duplicada ou cadastro alterado por outro usuário"},
+    },
+)
+async def update_discente(
+    data: DiscenteUpdate,
+    discente_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> DiscenteResponse:
+    current = await get_discente_or_404(session, discente_id, for_update=True)
+    if data.expected_updated_at != current.updated_at:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "stale_record", "message": "Este cadastro foi alterado por outro usuário. Recarregue os dados antes de salvar."},
+        )
+    changes = data.model_dump(exclude_unset=True, exclude={"expected_updated_at"})
+    values = current.model_dump(exclude={"id", "created_at", "updated_at"})
+    values.update(changes)
+    try:
+        validate_discente_dates(values["admission_date"], values["birth_date"])
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error)) from error
+
+    parameters = discente_parameters(values)
+    parameters["id"] = discente_id
+    try:
+        result = await session.execute(text(f"""
+            UPDATE public."Discente"
+            SET nome = :full_name, nome_social = :social_name, matricula = :registration_number,
+                curso = :course, turno = :shift, status = :status, data_ingresso = :admission_date,
+                data_nascimento = :birth_date, email_institucional = :email, telefone = :phone,
+                contato_familiar_nome = :family_name, contato_familiar_parentesco = :family_relationship,
+                contato_familiar_telefone = :family_phone, contato_familiar_email = :family_email,
+                contato_familiar_observacao = :family_notes, data_atualizacao = clock_timestamp()
+            WHERE id_discente = :id AND data_exclusao IS NULL
+            RETURNING {DETAIL_COLUMNS}
+        """), parameters)
+        updated = discente_response(result.mappings().one())
+        await session.commit()
+    except IntegrityError as error:
+        await session.rollback()
+        if is_duplicate_registration(error):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe um discente cadastrado com esta matrícula.") from error
+        raise
+    return updated

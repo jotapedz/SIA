@@ -2,6 +2,8 @@
 .button img { flex-shrink: 0; }
 .primary { background: var(--color-primary); color: white; }
 .primary:not(:disabled):hover { background: #2854d8; }
+.outline { padding: 8px 18px; border: 2px solid var(--color-primary); background: white; color: var(--color-primary); }
+.outline:disabled { opacity: .55; }
 .text { background: transparent; color: var(--color-text); }
 .text:not(:disabled):hover { color: var(--color-primary); background: #edf2ff; }
 .button:disabled { cursor: not-allowed; }
@@ -9,14 +11,21 @@
 .text:disabled { opacity: .5; }
 .field { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
 .field label { font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.32px; }
-.field input, .field select { width: 100%; min-width: 0; height: 56px; padding: 15px; border: 1px solid var(--color-muted); border-radius: 10px; background: white; color: var(--color-text); font: inherit; font-size: 14px; }
-.field input::placeholder { color: var(--color-muted); }
+.field input, .field select, .field textarea { width: 100%; min-width: 0; height: 56px; padding: 15px; border: 1px solid var(--color-muted); border-radius: 10px; background: white; color: var(--color-text); font: inherit; font-size: 14px; }
+.field input::placeholder, .field textarea::placeholder { color: var(--color-muted); }
+.field textarea { min-height: 130px; height: auto; resize: vertical; line-height: 1.6; }
 .field select { appearance: none; padding-right: 48px; }
 .selectControl { position: relative; }
 .selectControl img { position: absolute; top: 16px; right: 15px; transform: rotate(-90deg); pointer-events: none; }
 .field input[type='date'] { padding-right: 14px; }
 .field input[type='date']::-webkit-calendar-picker-indicator { width: 24px; height: 24px; background: url('/assets/calendar.svg') center / 24px 24px; }
-.field input:focus, .field select:focus { outline: 2px solid var(--color-primary); outline-offset: 2px; }
-.field input[aria-invalid='true'] { border-color: #b42318; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.field input[aria-invalid='true'], .field textarea[aria-invalid='true'] { border-color: #b42318; }
 .error { color: #b42318; font-size: 13px; line-height: 1.5; }
 .hint { color: #566781; font-size: 13px; line-height: 1.5; }
+.feedback { padding: 24px; margin: 25px 0; border: 1px solid #dce5ef; border-radius: 10px; background: white; line-height: 1.6; }
+.feedbackActions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+.feedbackActions a { color: var(--color-primary); }
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 30px; font-size: 14px; }
+.pagination > div { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 600px) { .pagination { flex-direction: column; } .pagination > div { gap: 0; } .pagination button { font-size: 14px; padding-inline: 12px; } }

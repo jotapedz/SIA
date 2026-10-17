@@ -5,6 +5,7 @@ export class ApiError extends Error {
     message: string,
     public readonly status: number,
     public readonly issues: ValidationIssue[] = [],
+    public readonly code: string = "",
   ) {
     super(message);
     this.name = "ApiError";
@@ -29,6 +30,9 @@ export async function apiRequest<T>(path: string, accessToken: string, options: 
   if (!response.ok) {
     const body: unknown = await response.json().catch(() => null);
     const detail = body && typeof body === "object" && "detail" in body ? body.detail : null;
+    const detailObject = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
+    const code = detailObject && "code" in detailObject && typeof detailObject.code === "string" ? detailObject.code : "";
+    const detailMessage = detailObject && "message" in detailObject && typeof detailObject.message === "string" ? detailObject.message : null;
     const issues = Array.isArray(detail)
       ? detail.filter((issue): issue is ValidationIssue =>
           issue && typeof issue === "object" && Array.isArray(issue.loc) && typeof issue.msg === "string")
@@ -39,8 +43,8 @@ export async function apiRequest<T>(path: string, accessToken: string, options: 
         ? "Seu perfil não tem acesso autorizado a esta funcionalidade."
         : response.status >= 500
           ? "O servidor não está disponível no momento. Tente novamente em instantes."
-          : typeof detail === "string" ? detail : "Verifique os dados informados e tente novamente.";
-    throw new ApiError(message, response.status, issues);
+          : detailMessage || (typeof detail === "string" ? detail : "Verifique os dados informados e tente novamente.");
+    throw new ApiError(message, response.status, issues, code);
   }
   return response.json() as Promise<T>;
 }
