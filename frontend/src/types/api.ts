@@ -56,6 +56,68 @@ export type Discente = DiscenteSummary & {
   updated_at: string;
 };
 
+export type DiscenteUpdate = Partial<DiscenteCreate> & { expected_updated_at: string };
+
+export type ReportType = "CADASTRO" | "ACOMPANHAMENTO" | "ACOES_SUCESSO" | "RECURSOS_ACESSIBILIDADE" | "BARREIRAS" | "OBSERVACOES";
+
+export type CategoriaAcessibilidade = {
+  id: number;
+  code: string | null;
+  name: string;
+  group: string;
+  section: string | null;
+  order: number;
+  requires_detail: boolean;
+};
+
+export type CategorySelection = { category_id: number; detail: string | null };
+export type RelatorioCategoria = CategoriaAcessibilidade & { detail: string | null };
+
+export type RelatorioSummary = {
+  id: number;
+  discente_id: number;
+  discente_name: string;
+  discente_social_name: string | null;
+  title: string;
+  description_excerpt: string;
+  report_type: string | null;
+  status: string;
+  author_id: number;
+  author_name: string;
+  opened_at: string;
+  closed_at: string | null;
+  updated_at: string;
+};
+
+export type Relatorio = RelatorioSummary & {
+  description: string;
+  activity: string | null;
+  ongoing_follow_up: string | null;
+  notes: string | null;
+  adopted_strategy: string | null;
+  observed_result: string | null;
+  categories: RelatorioCategoria[];
+};
+
+export type RelatorioCreate = {
+  title: string;
+  report_type: ReportType;
+  description?: string | null;
+  activity?: string | null;
+  ongoing_follow_up?: string | null;
+  notes?: string | null;
+  adopted_strategy?: string | null;
+  observed_result?: string | null;
+  categories?: CategorySelection[];
+};
+
+export type RelatorioList = {
+  items: RelatorioSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
 export type DiscenteList = {
   items: DiscenteSummary[];
   total: number;

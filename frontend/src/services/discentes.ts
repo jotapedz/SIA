@@ -1,4 +1,4 @@
-import type { Discente, DiscenteCreate, DiscenteFilters, DiscenteList } from "../types/api";
+import type { Discente, DiscenteCreate, DiscenteFilters, DiscenteList, DiscenteUpdate } from "../types/api";
 import { apiRequest } from "./api";
 
 export function listDiscentes(token: string, filters: DiscenteFilters, page: number, signal?: AbortSignal) {
@@ -11,3 +11,9 @@ export function listDiscentes(token: string, filters: DiscenteFilters, page: num
 
 export const createDiscente = (token: string, data: DiscenteCreate) =>
   apiRequest<Discente>("/v1/discentes", token, { method: "POST", body: JSON.stringify(data) });
+
+export const getDiscente = (token: string, id: number, signal?: AbortSignal) =>
+  apiRequest<Discente>(`/v1/discentes/${id}`, token, { signal });
+
+export const updateDiscente = (token: string, id: number, data: DiscenteUpdate) =>
+  apiRequest<Discente>(`/v1/discentes/${id}`, token, { method: "PATCH", body: JSON.stringify(data) });

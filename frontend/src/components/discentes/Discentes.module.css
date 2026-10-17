@@ -1,4 +1,8 @@
-.card { min-width: 0; min-height: 119px; padding: 15px; border: 1px solid rgb(195 212 233 / 49%); border-radius: 10px; background: white; overflow-wrap: anywhere; }
+.card { position: relative; min-width: 0; min-height: 119px; padding: 15px; border: 1px solid rgb(195 212 233 / 49%); border-radius: 10px; background: white; overflow-wrap: anywhere; }
+.cardLink { color: inherit; text-decoration: none; }
+.cardLink::after { position: absolute; inset: 0; border-radius: 10px; content: ""; }
+.card:focus-within { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.card:hover { border-color: var(--color-primary); }
 .card h2 { margin: 0 0 8px; color: var(--color-text); font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -.6px; }
 .card p { margin: 3px 0; color: #232934; font-size: 16px; line-height: 1.5; }
 .status { display: inline-block; margin-top: 6px; color: #566781; font-size: 13px; }
@@ -7,7 +11,6 @@
 .createForm { display: flex; flex-direction: column; gap: 30px; }
 .createForm :global(.form-error) { margin: 0; font-size: 14px; }
 .createForm :global(.form-error strong) { font-size: 16px; }
-.formHint { margin: 0; color: #566781; font-size: 13px; line-height: 1.5; }
 .formSection { min-width: 0; margin: 0; padding: 0; border: 0; }
 .formSection > legend { float: left; width: 100%; margin: 0 0 30px; padding: 0; font-size: 20px; font-weight: 800; line-height: 24px; letter-spacing: -.6px; }
 .formGrid { clear: both; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; }

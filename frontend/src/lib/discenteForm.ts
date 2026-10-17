@@ -1,4 +1,4 @@
-import type { DiscenteCreate, DiscenteStatus } from "../types/api";
+import type { Discente, DiscenteCreate, DiscenteStatus } from "../types/api";
 
 export type DiscenteFormValues = {
   full_name: string; social_name: string; registration_number: string;
@@ -13,6 +13,24 @@ export const emptyDiscenteForm: DiscenteFormValues = {
   admission_date: "", birth_date: "", email: "", phone: "", family_name: "",
   family_relationship: "", family_phone: "", family_email: "", family_notes: "",
 };
+
+export function fromDiscente(discente: Discente): DiscenteFormValues {
+  return {
+    full_name: discente.full_name, social_name: discente.social_name ?? "",
+    registration_number: discente.registration_number, course: discente.course ?? "", shift: discente.shift ?? "",
+    status: discente.status.trim().toUpperCase() as DiscenteStatus,
+    admission_date: discente.admission_date, birth_date: discente.birth_date ?? "",
+    email: discente.email ?? "", phone: discente.phone ?? "",
+    family_name: discente.family_contact?.full_name ?? "", family_relationship: discente.family_contact?.relationship ?? "",
+    family_phone: discente.family_contact?.phone ?? "", family_email: discente.family_contact?.email ?? "",
+    family_notes: discente.family_contact?.notes ?? "",
+  };
+}
+
+export function discenteChanges(initial: DiscenteCreate, current: DiscenteCreate): Partial<DiscenteCreate> {
+  return Object.fromEntries(Object.entries(current).filter(([key, value]) =>
+    JSON.stringify(value) !== JSON.stringify(initial[key as keyof DiscenteCreate]))) as Partial<DiscenteCreate>;
+}
 
 export function today() {
   const now = new Date();

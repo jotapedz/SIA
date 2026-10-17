@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import styles from "./Layout.module.css";
 
 export function Header({ authenticated = false }: { authenticated?: boolean }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [error, setError] = useState("");
   const [leaving, setLeaving] = useState(false);
 
@@ -28,7 +29,7 @@ export function Header({ authenticated = false }: { authenticated?: boolean }) {
         <img src="/assets/sia-logo-figma.svg" alt="SIA" />
       </Link>
       {authenticated && profile && <nav className={styles.navigation} aria-label="Menu principal">
-        <Link to="/discentes" aria-current="page">Início</Link>
+        <Link to="/discentes" aria-current={pathname === "/discentes" ? "page" : undefined}>Início</Link>
         <span className={styles.unavailable} aria-disabled="true" title="Gerenciamento de usuários ainda não disponível">Usuários</span>
         <details className={styles.profile}>
           <summary><span className={styles.person}><img src="/assets/person.svg" alt="" /></span>

@@ -4,6 +4,7 @@ from typing import Annotated
 
 from pydantic import (
     BaseModel,
+    AwareDatetime,
     ConfigDict,
     EmailStr,
     Field,
@@ -89,11 +90,49 @@ class DiscenteCreate(ContactFields):
 
     @model_validator(mode="after")
     def validate_dates(self) -> "DiscenteCreate":
-        if self.birth_date is not None:
-            if self.birth_date > date.today():
-                raise ValueError("A data de nascimento não pode estar no futuro.")
-            if self.birth_date > self.admission_date:
-                raise ValueError("A data de nascimento não pode ser posterior ao ingresso.")
+        validate_discente_dates(self.admission_date, self.birth_date)
+        return self
+
+
+def validate_discente_dates(admission_date: date, birth_date: date | None) -> None:
+    if birth_date is not None:
+        if birth_date > date.today():
+            raise ValueError("A data de nascimento não pode estar no futuro.")
+        if birth_date > admission_date:
+            raise ValueError("A data de nascimento não pode ser posterior ao ingresso.")
+
+
+class DiscenteUpdate(ContactFields):
+    expected_updated_at: AwareDatetime
+    full_name: Name | None = None
+    social_name: Name | None = None
+    registration_number: RegistrationNumber | None = None
+    course: Course | None = None
+    shift: Shift | None = None
+    status: DiscenteStatus | None = None
+    admission_date: date | None = None
+    birth_date: date | None = None
+    # Quando informado, substitui o contato completo; null remove todos os seus campos.
+    family_contact: FamilyContact | None = None
+
+    @field_validator("social_name", "course", "shift", mode="before")
+    @classmethod
+    def empty_optional_text_as_none(cls, value: object) -> object:
+        return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, value: object) -> object:
+        return value.strip().upper() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def validate_patch(self) -> "DiscenteUpdate":
+        changes = self.model_fields_set - {"expected_updated_at"}
+        if not changes:
+            raise ValueError("Informe ao menos um campo para alterar.")
+        for field in changes & {"full_name", "registration_number", "status", "admission_date"}:
+            if getattr(self, field) is None:
+                raise ValueError(f"O campo {field} não pode ser nulo.")
         return self
 
 
