@@ -8,7 +8,9 @@ export function AppLayout({ authenticated = false }: { authenticated?: boolean }
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
-    const title = pathname.includes("/relatorios/novo") ? "Adicionar relatório"
+    const title = pathname === "/usuarios" ? "Usuários"
+      : pathname.startsWith("/relatorios/") && pathname.endsWith("/editar") ? "Editar relatório"
+      : pathname.includes("/relatorios/novo") ? "Adicionar relatório"
       : pathname.startsWith("/relatorios/") ? "Relatório"
       : pathname.startsWith("/discentes/") ? "Discente"
       : pathname === "/discentes" ? "Discentes"

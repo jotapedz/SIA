@@ -1,4 +1,4 @@
-import type { CategoriaAcessibilidade, CategorySelection } from "../types/api";
+import type { CategoriaAcessibilidade, CategorySelection, RelatorioCategoria } from "../types/api";
 
 export const cadastroSections = {
   DEMANDAS_EDUCACIONAIS: "Demandas educacionais",
@@ -15,6 +15,10 @@ export const cadastroSteps: { label: string; sections: CadastroSection[] }[] = [
   { label: "Acomodações e recursos", sections: ["ACOMODACOES_RECURSOS"] },
 ];
 export type CadastroSelections = Record<number, { checked: boolean; detail: string }>;
+
+export function fromReportCategories(categories: RelatorioCategoria[]): CadastroSelections {
+  return Object.fromEntries(categories.map((item) => [item.id, { checked: true, detail: item.detail ?? "" }]));
+}
 
 export function cadastroErrors(title: string, selections: CadastroSelections, catalog: CategoriaAcessibilidade[], step?: number) {
   const errors: Record<string, string> = {};
@@ -33,5 +37,5 @@ export function cadastroErrors(title: string, selections: CadastroSelections, ca
 export function selectedCategories(selections: CadastroSelections, catalog: CategoriaAcessibilidade[]): CategorySelection[] {
   return catalog.filter((item) => selections[item.id]?.checked).map((item) => ({
     category_id: item.id, detail: item.requires_detail ? selections[item.id].detail.trim() || null : null,
-  }));
+  })).sort((a, b) => a.category_id - b.category_id);
 }

@@ -10,6 +10,8 @@ import { DiscenteDetailsPage } from "../pages/discentes/DiscenteDetailsPage";
 import { RelatorioCreatePage } from "../pages/relatorios/RelatorioCreatePage";
 import { RelatorioSelectPage } from "../pages/relatorios/RelatorioSelectPage";
 import { RelatorioDetailsPage } from "../pages/relatorios/RelatorioDetailsPage";
+import { RelatorioEditPage } from "../pages/relatorios/RelatorioEditPage";
+import { UsuariosPage } from "../pages/usuarios/UsuariosPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 
 export function AppRoutes() {
@@ -32,6 +34,8 @@ export function AppRoutes() {
         <Route path="/discentes/:discenteId/relatorios/novo" element={<RelatorioSelectPage />} />
         <Route path="/discentes/:discenteId/relatorios/novo/:reportType" element={<RelatorioCreatePage />} />
         <Route path="/relatorios/:relatorioId" element={<RelatorioDetailsPage />} />
+        <Route path="/relatorios/:relatorioId/editar" element={<RelatorioEditPage />} />
+        <Route path="/usuarios" element={<UsuariosPage />} />
         <Route path="/in-progress" element={<Navigate to="/discentes" replace />} />
       </Route>
     </Route>

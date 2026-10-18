@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +9,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     supabase_url: str
     supabase_publishable_key: str
+    supabase_secret_key: SecretStr | None = None
     database_url: str
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)

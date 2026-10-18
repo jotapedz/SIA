@@ -15,12 +15,12 @@ export function Field({ label, error, hint, id, required, className = "", ...pro
   );
 }
 
-export function SelectField({ id, label, children, value, onChange }: {
-  id: string; label: string; children: ReactNode; value: string; onChange: (value: string) => void;
+export function SelectField({ id, label, children, value, onChange, disabled = false }: {
+  id: string; label: string; children: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean;
 }) {
   return <div className={styles.field}><label htmlFor={id}>{label}</label>
     <div className={styles.selectControl}>
-      <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>{children}</select>
+      <select id={id} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{children}</select>
       <img src="/assets/chevron.svg" width="24" height="24" alt="" />
     </div>
   </div>;

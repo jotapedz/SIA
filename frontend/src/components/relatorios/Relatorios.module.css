@@ -18,6 +18,7 @@
 .author { margin: 8px 0 0; font-size: 14px; font-style: italic; line-height: 1.5; }
 .empty { padding: 25px; border: 1px solid #e2eaf4; border-radius: 10px; background: white; color: #596780; }
 .subtitle { margin: 0 0 50px; font-size: 24px; line-height: 1.5; }
+.detailSubtitle { margin-bottom: 25px; }
 .form { display: flex; flex-direction: column; gap: 44px; padding: 15px; border: 0; border-radius: 10px; background: white; }
 .form fieldset { display: flex; flex-direction: column; gap: 44px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .form :global(.form-error) { margin: 0; font-size: 14px; }
