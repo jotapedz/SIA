@@ -1,4 +1,4 @@
-import type { RelatorioCreate, ReportType } from "../types/api";
+import type { Relatorio, RelatorioCreate, ReportType } from "../types/api";
 
 export type ReportFieldKey = "description" | "activity" | "ongoing_follow_up" | "notes" | "adopted_strategy" | "observed_result";
 export type RelatorioFormValues = { title: string } & Record<ReportFieldKey, string>;
@@ -49,6 +49,15 @@ export function reportDefinition(type: string | null) {
 export const emptyRelatorioForm: RelatorioFormValues = {
   title: "", description: "", activity: "", ongoing_follow_up: "", notes: "", adopted_strategy: "", observed_result: "",
 };
+
+export function fromRelatorio(report: Relatorio): RelatorioFormValues {
+  return {
+    title: report.title, description: report.description, activity: report.activity ?? "",
+    ongoing_follow_up: report.ongoing_follow_up ?? "",
+    notes: report.notes ?? (report.report_type === "OBSERVACOES" ? report.description : ""),
+    adopted_strategy: report.adopted_strategy ?? "", observed_result: report.observed_result ?? "",
+  };
+}
 
 export function validateRelatorio(values: RelatorioFormValues, type: ReportType = "ACOMPANHAMENTO"): RelatorioErrors {
   const errors: RelatorioErrors = {};

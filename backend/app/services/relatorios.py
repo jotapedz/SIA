@@ -1,8 +1,10 @@
+from datetime import datetime
+
 from fastapi import HTTPException, status
 from sqlalchemy import bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.relatorio import CategorySelection, RelatorioCategoriaResponse, RelatorioResponse
+from app.schemas.relatorio import CategorySelection, RelatorioCategoriaResponse, RelatorioCreate, RelatorioResponse, ReportType
 
 
 SUMMARY_COLUMNS = """
@@ -17,7 +19,8 @@ SUMMARY_COLUMNS = """
 DETAIL_COLUMNS = SUMMARY_COLUMNS + """,
     r.demanda_apresentada AS description, r.atividade_disciplina AS activity,
     r.acompanhamento_continuado AS ongoing_follow_up, r.observacao AS notes,
-    r.estrategia_adotada AS adopted_strategy, r.resultado_observado AS observed_result
+    r.estrategia_adotada AS adopted_strategy, r.resultado_observado AS observed_result,
+    r.data_cancelamento AS cancelled_at, r.id_cancelado_por AS cancelled_by
 """
 REPORT_JOINS = """
     FROM public."Relatório" r
@@ -35,15 +38,19 @@ CATEGORY_COLUMNS = """
 """
 
 
-async def validate_categories(session: AsyncSession, selections: list[CategorySelection]) -> list[dict]:
+async def validate_categories(
+    session: AsyncSession, selections: list[CategorySelection], *, existing_ids: set[int] | None = None,
+) -> list[dict]:
     if not selections:
         return []
     query = text(f"""
         SELECT {CATEGORY_COLUMNS} FROM public."CategoriaAcessibilidade" c
-        WHERE c.id_categoria IN :ids AND c.ativo = TRUE AND c.subgrupo IN :sections
+        WHERE c.id_categoria IN :ids
+          AND ((c.ativo = TRUE AND c.subgrupo IN :sections) OR c.id_categoria IN :existing_ids)
         ORDER BY c.ordem, c.id_categoria FOR SHARE
-    """).bindparams(bindparam("ids", expanding=True), bindparam("sections", expanding=True))
-    result = await session.execute(query, {"ids": [item.category_id for item in selections], "sections": CADASTRO_SECTIONS})
+    """).bindparams(bindparam("ids", expanding=True), bindparam("sections", expanding=True), bindparam("existing_ids", expanding=True))
+    result = await session.execute(query, {"ids": [item.category_id for item in selections],
+        "sections": CADASTRO_SECTIONS, "existing_ids": sorted(existing_ids or set())})
     rows = [dict(row) for row in result.mappings().all()]
     if len(rows) != len(selections):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -57,10 +64,32 @@ async def validate_categories(session: AsyncSession, selections: list[CategorySe
     return rows
 
 
-async def get_relatorio_or_404(session: AsyncSession, relatorio_id: int) -> RelatorioResponse:
+def report_parameters(data: RelatorioCreate, categories: list[dict]) -> dict:
+    description = data.description
+    if data.report_type == ReportType.OBSERVACOES:
+        description = data.notes
+    elif data.report_type == ReportType.CADASTRO:
+        description = "\n".join(f"{item['name']}: {item['detail']}" if item["detail"] else item["name"] for item in categories) or data.title
+    parameters = data.model_dump(exclude={"categories", "report_type", "expected_updated_at"})
+    return {**parameters, "description": description, "report_type": data.report_type.value}
+
+
+def require_current_report(report: RelatorioResponse, expected_updated_at: datetime) -> None:
+    if report.status == "CANCELADO":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "report_cancelled", "message": "Este relatório está cancelado e não pode ser alterado."})
+    if report.updated_at != expected_updated_at:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "stale_record", "message": "Este relatório foi alterado por outro usuário. Recarregue os dados antes de continuar."})
+
+
+async def get_relatorio_or_404(
+    session: AsyncSession, relatorio_id: int, *, for_update: bool = False,
+) -> RelatorioResponse:
+    lock = "FOR UPDATE OF r FOR SHARE OF d" if for_update else ""
     result = await session.execute(text(f"""
         SELECT {DETAIL_COLUMNS} {REPORT_JOINS}
-        WHERE r.id_relatorio = :id AND {VISIBLE_REPORT}
+        WHERE r.id_relatorio = :id AND {VISIBLE_REPORT} {lock}
     """), {"id": relatorio_id})
     report = result.mappings().one_or_none()
     if report is None:

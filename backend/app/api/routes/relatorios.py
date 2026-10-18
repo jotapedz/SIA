@@ -5,10 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.dependencies.profile import get_authorized_profile
 from app.schemas.profile import ProfileResponse
-from app.schemas.relatorio import CategoriaResponse, RelatorioCreate, RelatorioListResponse, RelatorioResponse, RelatorioSummary, ReportType
+from app.schemas.relatorio import CategoriaResponse, RelatorioCancel, RelatorioCreate, RelatorioListResponse, RelatorioResponse, RelatorioSummary, RelatorioUpdate
+from app.services.profile import get_profile_id
 from app.services.relatorios import (
     CADASTRO_SECTIONS, CATEGORY_COLUMNS, REPORT_JOINS, SUMMARY_COLUMNS, VISIBLE_REPORT,
-    get_relatorio_or_404, validate_categories,
+    get_relatorio_or_404, report_parameters, require_current_report, validate_categories,
 )
 
 
@@ -92,21 +93,9 @@ async def create_relatorio(
     session: AsyncSession = Depends(get_db_session),
 ) -> RelatorioResponse:
     await require_discente(session, discente_id, lock=True)
-    author = await session.execute(text("""
-        SELECT id_perfil FROM public."Perfil"
-        WHERE auth_user_id = :auth_user_id AND is_active = TRUE AND data_exclusao IS NULL
-    """), {"auth_user_id": profile.id})
-    author_id = author.scalar_one_or_none()
-    if author_id is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Perfil sem acesso autorizado.")
+    author_id = await get_profile_id(session, profile)
     categories = await validate_categories(session, data.categories)
-    description = data.description
-    if data.report_type == ReportType.OBSERVACOES:
-        description = data.notes
-    elif data.report_type == ReportType.CADASTRO:
-        description = "\n".join(f"{item['name']}: {item['detail']}" if item["detail"] else item["name"] for item in categories) or data.title
-    parameters = data.model_dump(exclude={"categories", "report_type"})
-    parameters.update(discente_id=discente_id, author_id=author_id, report_type=data.report_type.value, description=description)
+    parameters = {**report_parameters(data, categories), "discente_id": discente_id, "author_id": author_id}
     result = await session.execute(text("""
         INSERT INTO public."Relatório"
             (id_discente, id_autor, resumo_demanda, demanda_apresentada, status,
@@ -126,3 +115,64 @@ async def create_relatorio(
     report = await get_relatorio_or_404(session, report_id)
     await session.commit()
     return report
+
+
+@router.put(
+    "/relatorios/{relatorio_id}", response_model=RelatorioResponse,
+    summary="Editar relatório (RF09)",
+    responses={404: {"description": "Relatório não encontrado"}, 409: {"description": "Conflito de versão, tipo ou cancelamento"}},
+)
+async def update_relatorio(
+    data: RelatorioUpdate,
+    relatorio_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> RelatorioResponse:
+    current = await get_relatorio_or_404(session, relatorio_id, for_update=True)
+    require_current_report(current, data.expected_updated_at)
+    if current.report_type != data.report_type.value:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="Não é permitido mudar o tipo de um relatório existente.")
+    categories = await validate_categories(session, data.categories, existing_ids={item.id for item in current.categories})
+    await session.execute(text("""
+        UPDATE public."Relatório"
+        SET resumo_demanda = :title, demanda_apresentada = :description,
+            atividade_disciplina = :activity, acompanhamento_continuado = :ongoing_follow_up,
+            observacao = :notes, estrategia_adotada = :adopted_strategy,
+            resultado_observado = :observed_result, data_atualizacao = clock_timestamp()
+        WHERE id_relatorio = :id
+    """), {**report_parameters(data, categories), "id": relatorio_id})
+    await session.execute(text('DELETE FROM public."RelatorioCategoria" WHERE id_relatorio = :id'), {"id": relatorio_id})
+    if categories:
+        await session.execute(text("""
+            INSERT INTO public."RelatorioCategoria" (id_relatorio, id_categoria, detalhe_objetivo)
+            VALUES (:report_id, :category_id, :detail)
+        """), [{"report_id": relatorio_id, "category_id": item["id"], "detail": item["detail"]} for item in categories])
+    updated = await get_relatorio_or_404(session, relatorio_id)
+    await session.commit()
+    return updated
+
+
+@router.post(
+    "/relatorios/{relatorio_id}/cancelamento", response_model=RelatorioResponse,
+    summary="Cancelar relatório sem apagar o registro (RF10)",
+    responses={404: {"description": "Relatório não encontrado"}, 409: {"description": "Relatório alterado ou já cancelado"}},
+)
+async def cancel_relatorio(
+    data: RelatorioCancel,
+    relatorio_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> RelatorioResponse:
+    current = await get_relatorio_or_404(session, relatorio_id, for_update=True)
+    require_current_report(current, data.expected_updated_at)
+    actor_id = await get_profile_id(session, profile)
+    await session.execute(text("""
+        WITH instante AS (SELECT clock_timestamp() AS agora)
+        UPDATE public."Relatório" SET status = 'CANCELADO', data_cancelamento = instante.agora,
+            id_cancelado_por = :actor_id, data_atualizacao = instante.agora
+        FROM instante WHERE id_relatorio = :id
+    """), {"id": relatorio_id, "actor_id": actor_id})
+    cancelled = await get_relatorio_or_404(session, relatorio_id)
+    await session.commit()
+    return cancelled

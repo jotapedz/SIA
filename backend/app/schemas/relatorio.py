@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -81,7 +81,7 @@ class RelatorioCreate(BaseModel):
             ReportType.BARREIRAS: {"description", "notes"},
             ReportType.OBSERVACOES: {"notes"},
         }[self.report_type]
-        for field in self.model_fields_set - allowed - {"title", "report_type"}:
+        for field in self.model_fields_set - allowed - {"title", "report_type", "expected_updated_at"}:
             if getattr(self, field) not in (None, []):
                 raise ValueError(f"O campo {field} não pertence a este tipo de relatório.")
         required = []
@@ -98,6 +98,16 @@ class RelatorioCreate(BaseModel):
         if len(ids) != len(set(ids)):
             raise ValueError("Não repita uma categoria no mesmo relatório.")
         return self
+
+
+class RelatorioUpdate(RelatorioCreate):
+    report_type: ReportType
+    expected_updated_at: AwareDatetime
+
+
+class RelatorioCancel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_updated_at: AwareDatetime
 
 
 class RelatorioSummary(BaseModel):
@@ -124,6 +134,8 @@ class RelatorioResponse(RelatorioSummary):
     adopted_strategy: str | None
     observed_result: str | None
     categories: list[RelatorioCategoriaResponse] = Field(default_factory=list)
+    cancelled_at: datetime | None = None
+    cancelled_by: int | None = None
 
 
 class RelatorioListResponse(BaseModel):

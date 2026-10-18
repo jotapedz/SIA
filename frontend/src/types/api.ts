@@ -97,6 +97,8 @@ export type Relatorio = RelatorioSummary & {
   adopted_strategy: string | null;
   observed_result: string | null;
   categories: RelatorioCategoria[];
+  cancelled_at: string | null;
+  cancelled_by: number | null;
 };
 
 export type RelatorioCreate = {
@@ -110,6 +112,30 @@ export type RelatorioCreate = {
   observed_result?: string | null;
   categories?: CategorySelection[];
 };
+
+export type RelatorioUpdate = RelatorioCreate & { expected_updated_at: string };
+
+export type UsuarioRole = "AGENTE_ACESSIBILIDADE" | "COORDENACAO_ACESSIBILIDADE";
+export type UsuarioStatus = "ATIVO" | "INATIVO";
+export type Usuario = {
+  id: number;
+  full_name: string;
+  email: string;
+  role: string;
+  status: UsuarioStatus;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+export type UsuarioCreate = {
+  full_name: string;
+  email: string;
+  password: string;
+  role: UsuarioRole;
+  status: UsuarioStatus;
+};
+export type UsuarioList = { items: Usuario[]; total: number; page: number; page_size: number };
+export type UsuarioFilters = { q: string; role: UsuarioRole | ""; status: UsuarioStatus | "" };
 
 export type RelatorioList = {
   items: RelatorioSummary[];

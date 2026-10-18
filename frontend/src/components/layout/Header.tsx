@@ -30,7 +30,7 @@ export function Header({ authenticated = false }: { authenticated?: boolean }) {
       </Link>
       {authenticated && profile && <nav className={styles.navigation} aria-label="Menu principal">
         <Link to="/discentes" aria-current={pathname === "/discentes" ? "page" : undefined}>Início</Link>
-        <span className={styles.unavailable} aria-disabled="true" title="Gerenciamento de usuários ainda não disponível">Usuários</span>
+        <Link to="/usuarios" aria-current={pathname === "/usuarios" ? "page" : undefined}>Usuários</Link>
         <details className={styles.profile}>
           <summary><span className={styles.person}><img src="/assets/person.svg" alt="" /></span>
             <span>{profile.full_name.split(" ")[0]}</span>

@@ -33,6 +33,7 @@ export async function apiRequest<T>(path: string, accessToken: string, options: 
     const detailObject = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
     const code = detailObject && "code" in detailObject && typeof detailObject.code === "string" ? detailObject.code : "";
     const detailMessage = detailObject && "message" in detailObject && typeof detailObject.message === "string" ? detailObject.message : null;
+    const safeServiceMessage = response.status === 503 && ["users_unavailable", "user_creation_unconfirmed"].includes(code) ? detailMessage : null;
     const issues = Array.isArray(detail)
       ? detail.filter((issue): issue is ValidationIssue =>
           issue && typeof issue === "object" && Array.isArray(issue.loc) && typeof issue.msg === "string")
@@ -42,7 +43,7 @@ export async function apiRequest<T>(path: string, accessToken: string, options: 
       : response.status === 403
         ? "Seu perfil não tem acesso autorizado a esta funcionalidade."
         : response.status >= 500
-          ? "O servidor não está disponível no momento. Tente novamente em instantes."
+          ? safeServiceMessage || "O servidor não está disponível no momento. Tente novamente em instantes."
           : detailMessage || (typeof detail === "string" ? detail : "Verifique os dados informados e tente novamente.");
     throw new ApiError(message, response.status, issues, code);
   }
