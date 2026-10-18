@@ -137,10 +137,10 @@ Professores poderão receber orientações produzidas pelos Agentes de Acessibil
 | **RF06**      | **O Agente de Acessibilidade** deve editar as informações de um discente **por meio da funcionalidade de edição**, **para manter seus dados atualizados**.                                                                                                   |      Média |  Done      |
 | **RF07**      | **O Agente de Acessibilidade** deve visualizar os relatórios de acompanhamento cadastrados **por meio da listagem de relatórios**, **para consultar os registros associados aos discentes**.                                                                 |       Alta |   Done     |
 | **RF08**      | **O Agente de Acessibilidade** deve adicionar relatórios de acompanhamento **por meio de um formulário de registro**, **para documentar informações relacionadas ao acompanhamento dos discentes**.                                                        |       Alta |   Done     |
-| **RF09**      | **O Agente de Acessibilidade** deve editar relatórios de acompanhamento **por meio da funcionalidade de edição**, **para corrigir ou atualizar informações registradas**.                                                                                    |      Média |        |
-| **RF10**      | **O Agente de Acessibilidade** deve cancelar ou desativar relatórios **por meio da funcionalidade de gerenciamento dos registros**, **para impedir que relatórios inválidos ou não aplicáveis permaneçam ativos**.                                           |      Média |        |
-| **RF11**      | **O Agente de Acessibilidade** deve visualizar os usuários cadastrados **por meio da listagem de usuários**, **para consultar os usuários registrados no sistema**.                                                                                           |      Baixa |        |
-| **RF12**      | **O Agente de Acessibilidade** deve cadastrar usuários **por meio de um formulário de cadastro**, **para conceder acesso ao sistema a novos usuários**.                                                                                                      |       Alta |        |
+| **RF09**      | **O Agente de Acessibilidade** deve editar relatórios de acompanhamento **por meio da funcionalidade de edição**, **para corrigir ou atualizar informações registradas**.                                                                                    |      Média |   Done     |
+| **RF10**      | **O Agente de Acessibilidade** deve cancelar ou desativar relatórios **por meio da funcionalidade de gerenciamento dos registros**, **para impedir que relatórios inválidos ou não aplicáveis permaneçam ativos**.                                           |      Média |   Done     |
+| **RF11**      | **O Agente de Acessibilidade** deve visualizar os usuários cadastrados **por meio da listagem de usuários**, **para consultar os usuários registrados no sistema**.                                                                                           |      Baixa |   Done     |
+| **RF12**      | **O Agente de Acessibilidade** deve cadastrar usuários **por meio de um formulário de cadastro**, **para conceder acesso ao sistema a novos usuários**.                                                                                                      |       Alta |   Done     |
 | **RF13**      | **O Agente de Acessibilidade** deve editar as informações dos usuários **por meio da funcionalidade de edição**, **para manter seus dados atualizados**.                                                                                                     |       Alta |        |
 | **RF14**      | **O Agente de Acessibilidade** deve visualizar seu próprio perfil **por meio da área de perfil**, **para consultar seus dados cadastrados e informações de acesso**.                                                                                          |       Alta |        |
 | **RF15**      | **O Agente de Acessibilidade** deve alterar seu e-mail **por meio da área de gerenciamento do perfil**, **para manter seu endereço de e-mail atualizado**.                                                                                                   |      Baixa |        |
@@ -438,26 +438,35 @@ npm run dev
 
 O Vite informará no terminal o endereço local para acessar a aplicação durante o desenvolvimento.
 
-### Configuração do Supabase
 
-No ambiente de desenvolvimento compartilhado, o perfil de teste descrito abaixo já está criado. As instruções seguintes servem para preparar outro ambiente a partir das tabelas existentes.
+### Execução do backend
 
-1. Em **Authentication > Providers**, habilite o provedor **Email**.
-2. No **SQL Editor**, execute, nesta ordem, `database/migrations/0001_perfil_auth.sql` e `database/migrations/0002_discente.sql`. A segunda migração complementa a tabela `Discente` existente, sem recriá-la.
-3. Em **Authentication > Users**, crie o usuário inicial.
-4. No **Table Editor**, crie ou localize o registro correspondente em `Perfil`.
-5. Defina o `tipo_perfil` pelo Table Editor e vincule o registro de `Perfil` ao usuário do Supabase, ativando-o pelo SQL Editor:
-
-```sql
-UPDATE public."Perfil" AS perfil
-SET auth_user_id = usuario.id,
-    is_active = TRUE
-FROM auth.users AS usuario
-WHERE perfil.email = usuario.email
-  AND usuario.email = 'teste.sia@example.org';
+```powershell
+cd backend
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
-O campo `tipo_perfil` continua sendo gerenciado na tabela `Perfil`. O backend usa `auth_user_id` para localizar o perfil e `is_active` para liberar ou bloquear acesso. O campo `senha_hash` não é usado pelo sistema, pois o Supabase Auth mantém as senhas com segurança.
+### Variáveis de ambiente
+
+Os arquivos `frontend/.env` e `backend/.env` são locais e estão no `.gitignore`. Não publique senhas do banco ou chaves secretas do Supabase nesses arquivos nem em outros arquivos versionados.
+
+O arquivo `frontend/.env` contém a configuração local do Supabase e não é versionado. Use `frontend/.env.example` como referência:
+
+```env
+VITE_SUPABASE_URL=https://jkodhibwdjwcfiicbjyk.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
+VITE_API_BASE_URL=http://localhost:8000
+```
+Para o backend, crie `backend/.env` a partir de `backend/.env.example`. Use a URL do **Session pooler** em **Connect** no Supabase quando sua rede não tiver IPv6:
+
+```env
+SUPABASE_URL=https://jkodhibwdjwcfiicbjyk.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
+DATABASE_URL=postgresql+asyncpg://postgres:sua_senha@host:porta/postgres
+```
 
 ### Perfil disponível para testes
 
@@ -476,37 +485,5 @@ Após o login, é possível testar a listagem, a busca, os filtros e o cadastro 
 
 O endereço `example.org` é fictício e não recebe mensagens. Para testar a recuperação de senha, utilize outra conta com uma caixa de e-mail acessível. A senha de login acima não é a senha de conexão com o banco de dados.
 
-### Recuperação de senha
-
-Para a recuperação de senha local, em **Authentication > URL Configuration**, configure o **Site URL** como `http://localhost:5173` e inclua `http://localhost:5173/redefinir-senha` em **Redirect URLs**. Em produção, inclua a URL publicada equivalente.
-
-### Variáveis de ambiente
-
-Os arquivos `frontend/.env` e `backend/.env` são locais e estão no `.gitignore`. Não publique senhas do banco ou chaves secretas do Supabase nesses arquivos nem em outros arquivos versionados.
-
-O arquivo `frontend/.env` contém a configuração local do Supabase e não é versionado. Use `frontend/.env.example` como referência:
-
-```env
-VITE_SUPABASE_URL=https://jkodhibwdjwcfiicbjyk.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
-VITE_API_BASE_URL=http://localhost:8000
-```
-
-Para o backend, crie `backend/.env` a partir de `backend/.env.example`. Use a URL do **Session pooler** em **Connect** no Supabase quando sua rede não tiver IPv6:
-
-```env
-SUPABASE_URL=https://jkodhibwdjwcfiicbjyk.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
-DATABASE_URL=postgresql+asyncpg://postgres:sua_senha@host:porta/postgres
-```
 
 
-### Execução do backend
-
-```powershell
-cd backend
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
