@@ -1,4 +1,4 @@
-.main { flex: 1; padding: 90px 30px 34px; background: #f6f7f9 url('/assets/login-background.svg') center top / 1440px auto repeat-y; background-blend-mode: multiply; }
+.main { flex: 1; padding: 90px 30px 34px; background: #f6f7f9 url('/assets/login-background.svg') center top / 100% auto repeat-y; background-blend-mode: multiply; }
 .content { max-width: 1379px; margin: 0 auto; }
 .content h1 { margin: 0 0 25px; color: var(--color-primary); font-size: 32px; font-weight: 800; line-height: 48px; letter-spacing: -.96px; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 50px; }

@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import styles from "./Modal.module.css";
 
-export function Modal({ title, busy = false, compact = false, narrow = false, onClose, children }: {
+export function Modal({ title, busy = false, compact = false, narrow = false, onClose, children, className = "", style, headerAction }: {
   title: string; busy?: boolean; compact?: boolean; narrow?: boolean; onClose: () => void; children: ReactNode;
+  className?: string; style?: CSSProperties; headerAction?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -19,9 +20,10 @@ export function Modal({ title, busy = false, compact = false, narrow = false, on
     };
   }, []);
   return (
-    <dialog ref={ref} className={`${styles.dialog} ${compact ? styles.compact : ""} ${narrow ? styles.narrow : ""}`} aria-labelledby="modal-title" aria-busy={busy}
+    <dialog ref={ref} className={`${styles.dialog} ${compact ? styles.compact : ""} ${narrow ? styles.narrow : ""} ${className}`} style={style} aria-labelledby="modal-title" aria-busy={busy}
       onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }}>
-      <h2 id="modal-title" className={styles.title}>{title}</h2>
+      {headerAction ? <div className={styles.heading}><h2 id="modal-title" className={styles.title}>{title}</h2>{headerAction}</div>
+        : <h2 id="modal-title" className={styles.title}>{title}</h2>}
       {children}
     </dialog>
   );

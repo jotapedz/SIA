@@ -33,7 +33,7 @@ export async function apiRequest<T>(path: string, accessToken: string, options: 
     const detailObject = detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
     const code = detailObject && "code" in detailObject && typeof detailObject.code === "string" ? detailObject.code : "";
     const detailMessage = detailObject && "message" in detailObject && typeof detailObject.message === "string" ? detailObject.message : null;
-    const safeServiceMessage = response.status === 503 && ["users_unavailable", "user_creation_unconfirmed"].includes(code) ? detailMessage : null;
+    const safeServiceMessage = response.status === 503 && ["users_unavailable", "user_creation_unconfirmed", "photos_unavailable"].includes(code) ? detailMessage : null;
     const issues = Array.isArray(detail)
       ? detail.filter((issue): issue is ValidationIssue =>
           issue && typeof issue === "object" && Array.isArray(issue.loc) && typeof issue.msg === "string")

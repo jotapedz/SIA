@@ -26,6 +26,6 @@ export function RelatorioList({ discenteId }: { discenteId: number }) {
         : data && data.items.length > 0 ? <div className={styles.grid}>{data.items.map((item) => <RelatorioCard key={item.id} relatorio={item} />)}</div>
           : <p className={styles.empty}>Nenhum relatório cadastrado para este discente.</p>}
     </div>
-    {data && <Pagination total={data.total} page={page} pageSize={data.page_size} onChange={setPage} label="relatórios" busy={loading} />}
+    {data && <Pagination total={data.total} page={page} pageSize={data.page_size} onChange={setPage} label="relatórios" singularLabel="relatório" busy={loading} />}
   </section>;
 }

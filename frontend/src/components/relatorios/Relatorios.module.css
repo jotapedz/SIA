@@ -17,7 +17,7 @@
 .excerpt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 20px 0 8px; white-space: pre-wrap; line-height: 1.6; }
 .author { margin: 8px 0 0; font-size: 14px; font-style: italic; line-height: 1.5; }
 .empty { padding: 25px; border: 1px solid #e2eaf4; border-radius: 10px; background: white; color: #596780; }
-.subtitle { margin: 0 0 50px; font-size: 24px; line-height: 1.5; }
+.subtitle { margin: 0 0 50px; color: var(--color-primary); font-size: 24px; line-height: 1.5; }
 .detailSubtitle { margin-bottom: 25px; }
 .form { display: flex; flex-direction: column; gap: 44px; padding: 15px; border: 0; border-radius: 10px; background: white; }
 .form fieldset { display: flex; flex-direction: column; gap: 44px; min-width: 0; margin: 0; padding: 0; border: 0; }
@@ -43,6 +43,19 @@
 .cancelDescription p { margin: 0 0 10px; }
 .cancelActions { display: flex; justify-content: center; gap: 10px; margin-top: 30px; }
 .success { padding: 16px 20px; margin-bottom: 25px; border: 1px solid #a6d9bd; border-radius: 8px; background: #eaf7ef; color: #155a32; }
+.printStudent { display: none; }
+@media print {
+  :global(body):has(.report) { background: white; }
+  :global(body):has(.report) :global(header), :global(body):has(.report) :global(footer),
+  :global(body):has(.report) :global(.breadcrumb), :global(body):has(.report) :global(dialog),
+  .actions, .success, .reportHeader > button { display: none !important; }
+  :global(main):has(.report) { padding: 0; background: white; }
+  .report { border: 0; padding: 0; }
+  .reportHeader { display: block; }
+  .reportBody h3 { break-after: avoid; }
+  .reportBody p, .reportBody li { color: #232934; }
+  .printStudent { display: block; }
+}
 @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; } }
 @media (max-width: 900px) { .typeGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; } }
 @media (max-width: 700px) { .reportHeader { flex-direction: column; } .reportHeader h2 { font-size: 24px; } }

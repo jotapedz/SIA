@@ -1,0 +1,15 @@
+.dialog { position: fixed; right: 30px; bottom: auto; left: auto; margin: 0; padding: 24px 30px; border: 1px solid var(--color-primary); border-radius: 4px; box-shadow: 0 4px 12px rgb(26 32 44 / 16%); }
+.dialog h2 { padding-top: 5px; color: var(--color-text); font-size: 24px; font-weight: 700; line-height: 1.4; letter-spacing: -.72px; overflow-wrap: anywhere; }
+.close { display: inline-flex; flex-shrink: 0; align-items: center; gap: 5px; min-height: 36px; padding: 0; border: 0; background: transparent; color: var(--color-primary); font-size: 14px; cursor: pointer; }
+.role { display: inline-block; max-width: 100%; margin-top: 4px; padding: 4px 6px; border-radius: 8px; background: rgb(138 36 241 / 15%); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.email { margin: 8px 0 12px; color: #596780; font-size: 14px; overflow-wrap: anywhere; }
+.links { display: grid; }
+.links button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 0; border: 0; background: white; color: var(--color-text); font-size: 16px; text-align: left; cursor: pointer; }
+.links button + button { border-top: 1px solid #e2eaf4; }
+.links svg { flex-shrink: 0; }
+.links button:hover { color: var(--color-primary); }
+.actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.actions button { min-height: 40px; padding: 8px 24px; border: 1px solid #b42318; border-radius: 4px; background: #fff1f0; color: #b42318; font-size: 14px; font-weight: 600; cursor: pointer; }
+.actions button:hover:not(:disabled) { background: #b42318; color: white; }
+.actions button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 600px) { .dialog { right: 16px; padding: 20px; } .dialog h2 { font-size: 22px; } }

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_publishable_key: str
     supabase_secret_key: SecretStr | None = None
+    supabase_student_photos_bucket: str = "Fotos Discentes"
     database_url: str
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)

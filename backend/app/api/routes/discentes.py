@@ -1,4 +1,5 @@
 from datetime import date
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import text
@@ -17,6 +18,9 @@ from app.schemas.discente import (
     validate_discente_dates,
 )
 from app.schemas.profile import ProfileResponse
+from app.schemas.historico import DiscenteDelete, HistoricoResponse
+from app.services.historico import registrar, consultar
+from app.services.discente_fotos import PhotoStorage, prepare_photo, commit_photo_change
 from app.services.discentes import (
     DETAIL_COLUMNS,
     SUMMARY_COLUMNS,
@@ -24,6 +28,7 @@ from app.services.discentes import (
     discente_response,
     get_discente_or_404,
     is_duplicate_registration,
+    alteracoes_discente,
 )
 
 
@@ -120,7 +125,8 @@ async def create_discente(
     profile: ProfileResponse = Depends(get_authorized_profile),
     session: AsyncSession = Depends(get_db_session),
 ) -> DiscenteResponse:
-    parameters = discente_parameters(data.model_dump())
+    image = await prepare_photo(data.photo)
+    parameters = discente_parameters(data.model_dump(exclude={"photo"}))
     parameters["status"] = data.status.value
     try:
         result = await session.execute(
@@ -143,7 +149,11 @@ async def create_discente(
             parameters,
         )
         discente = discente_response(result.mappings().one())
-        await session.commit()
+        await registrar(session, profile, "DISCENTE", discente.id, "Cadastro de discente")
+        if image is not None:
+            discente = await commit_photo_change(session, profile, discente.id, None, image)
+        else:
+            await session.commit()
     except IntegrityError as error:
         await session.rollback()
         # A restrição UNIQUE também protege contra cadastros simultâneos.
@@ -189,7 +199,8 @@ async def update_discente(
             status_code=status.HTTP_409_CONFLICT,
             detail={"code": "stale_record", "message": "Este cadastro foi alterado por outro usuário. Recarregue os dados antes de salvar."},
         )
-    changes = data.model_dump(exclude_unset=True, exclude={"expected_updated_at"})
+    image = await prepare_photo(data.photo)
+    changes = data.model_dump(exclude_unset=True, exclude={"expected_updated_at", "photo"})
     values = current.model_dump(exclude={"id", "created_at", "updated_at"})
     values.update(changes)
     try:
@@ -212,10 +223,58 @@ async def update_discente(
             RETURNING {DETAIL_COLUMNS}
         """), parameters)
         updated = discente_response(result.mappings().one())
-        await session.commit()
+        for campo, operacao in alteracoes_discente(current, updated):
+            await registrar(session, profile, "DISCENTE", discente_id, operacao, campos=[campo])
+        if "photo" in data.model_fields_set:
+            updated = await commit_photo_change(session, profile, discente_id, current.photo_path, image)
+        else:
+            await session.commit()
     except IntegrityError as error:
         await session.rollback()
         if is_duplicate_registration(error):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe um discente cadastrado com esta matrícula.") from error
         raise
     return updated
+
+
+@router.get("/{discente_id}/foto")
+async def foto_discente(
+    discente_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    discente = await get_discente_or_404(session, discente_id)
+    if not discente.photo_path:
+        return {"url": None, "expires_in": 300}
+    async with httpx.AsyncClient(timeout=20) as client:
+        url = await PhotoStorage(client).signed_url(discente_id, discente.photo_path)
+    return {"url": url, "expires_in": 300}
+
+
+@router.get("/{discente_id}/historico", response_model=HistoricoResponse)
+async def historico_discente(
+    discente_id: int = Path(ge=1, le=9223372036854775807),
+    page: int = Query(default=1, ge=1), page_size: int = Query(default=10, ge=1, le=100),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> HistoricoResponse:
+    await get_discente_or_404(session, discente_id)
+    return await consultar(session, "DISCENTE", discente_id, page, page_size)
+
+
+@router.post("/{discente_id}/exclusao", summary="Excluir discente da listagem preservando os registros")
+async def excluir_discente(
+    data: DiscenteDelete,
+    discente_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, bool]:
+    current = await get_discente_or_404(session, discente_id, for_update=True)
+    if current.updated_at != data.expected_updated_at:
+        raise HTTPException(status_code=409, detail={"code": "stale_record", "message": "O cadastro foi alterado. Recarregue antes de excluir."})
+    await session.execute(text('''UPDATE public."Discente"
+        SET data_exclusao = clock_timestamp(), data_atualizacao = clock_timestamp()
+        WHERE id_discente = :id'''), {"id": discente_id})
+    await registrar(session, profile, "DISCENTE", discente_id, "Exclusão lógica de discente")
+    await session.commit()
+    return {"deleted": True}

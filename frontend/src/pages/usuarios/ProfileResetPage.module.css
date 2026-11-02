@@ -1,0 +1,12 @@
+.main { display: flex; flex: 1; flex-direction: column; }
+.main > :global(.breadcrumb) { min-height: 65px; padding: 24px 30px; font-size: 16px; }
+.stage { display: grid; flex: 1; place-items: center; padding: 70px 16px; background: #f6f7f9 url('/assets/login-background.svg') center top / 100% auto repeat-y; background-blend-mode: multiply; }
+.card { width: min(446px, 100%); padding: 30px; border-radius: 10px; background: white; }
+.card h1 { margin: 0 0 40px; color: var(--color-primary); font-size: 32px; font-weight: 800; line-height: 1.5; letter-spacing: -.96px; }
+.card fieldset { display: flex; flex-direction: column; gap: 38px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.card label > span[aria-hidden='true'] { display: none; }
+.card :global(.form-error) { margin: 0 0 24px; font-size: 14px; }
+.card :global(.form-error strong) { font-size: 16px; }
+.actions { display: flex; justify-content: center; gap: 16px; margin-top: 38px; }
+.success { padding: 16px; margin: 0 0 24px; border: 1px solid #a6d9bd; border-radius: 8px; background: #eaf7ef; color: #155a32; line-height: 1.5; }
+@media (max-width: 600px) { .main > :global(.breadcrumb) { padding-inline: 16px; font-size: 14px; } .stage { padding-block: 40px; } .card { padding: 24px; } .card h1 { font-size: 28px; } }

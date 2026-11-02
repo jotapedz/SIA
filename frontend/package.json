@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node tests/profileSecurity.test.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

@@ -3,7 +3,9 @@ import { usuarioRoleLabel } from "../../lib/usuarioForm";
 import { Button } from "../ui/Button";
 import styles from "./Usuarios.module.css";
 
-export function UsuarioCard({ user, onDetails }: { user: Usuario; onDetails: () => void }) {
+export function UsuarioCard({ user, onDetails, onEdit, onDelete, deletionDisabled = false }: {
+  user: Usuario; onDetails: () => void; onEdit: () => void; onDelete: () => void; deletionDisabled?: boolean;
+}) {
   return <article className={styles.card}>
     <h2><button type="button" onClick={onDetails} aria-label={`Visualizar detalhes de ${user.full_name}`}>{user.full_name}</button></h2>
     <span className={`${styles.role} ${user.role === "COORDENACAO_ACESSIBILIDADE" ? styles.coordination : styles.agent}`}>
@@ -11,8 +13,11 @@ export function UsuarioCard({ user, onDetails }: { user: Usuario; onDetails: () 
     </span>
     <p className={styles.status}><img src={user.is_active ? "/assets/status-active.svg" : "/assets/status-inactive.svg"} alt="" />{user.is_active ? "Ativo" : "Inativo"}</p>
     <div className={styles.cardActions}>
-      <Button variant="outline" disabled title="Edição de usuários prevista no RF13"><img src="/assets/edit-outline.svg" alt="" /> Editar</Button>
-      <Button variant="outline" disabled title="Exclusão de usuários não disponível nesta etapa"><img src="/assets/delete-outline.svg" alt="" /> Excluir</Button>
+      <Button variant="outline" onClick={onEdit}><img src="/assets/edit-outline.svg" alt="" /> Editar</Button>
+      <Button variant="outline" onClick={onDelete} disabled={deletionDisabled}
+        title={deletionDisabled ? "Não é possível excluir o próprio usuário" : undefined}>
+        <img src="/assets/delete-outline.svg" alt="" /> Excluir
+      </Button>
     </div>
   </article>;
 }

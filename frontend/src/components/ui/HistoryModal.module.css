@@ -1,0 +1,7 @@
+.scroll { overflow-x: auto; border: 1px solid #8ca5cf; border-radius: 10px; }
+.table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.table th, .table td { padding: 18px 16px; overflow-wrap: anywhere; }
+.table tr + tr, .table tbody tr:first-child { border-top: 1px solid #8ca5cf; }
+.table th { font-weight: 600; }
+.table td:first-child { min-width: 140px; }
+.actions { display: flex; justify-content: center; margin-top: 30px; }

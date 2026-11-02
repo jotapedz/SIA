@@ -9,6 +9,10 @@
 .details[hidden] { display: none; }
 .details > section { min-width: 0; }
 .details h3 { margin: 0 0 30px; font-size: 20px; font-weight: 600; line-height: 1.5; }
+.identity { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.identity > div { min-width: 0; }
+.photoSlot { flex-shrink: 0; }
+.photoSlot[hidden] { display: none; }
 .infoGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px; margin: 0; font-size: 16px; line-height: 1.5; }
 .infoGrid > div { display: flex; min-width: 0; align-items: flex-start; gap: 16px; }
 .infoGrid dt { font-weight: 600; flex-shrink: 0; max-width: 55%; }

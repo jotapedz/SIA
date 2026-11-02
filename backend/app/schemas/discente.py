@@ -66,6 +66,7 @@ class FamilyContact(ContactFields):
 
 
 class DiscenteCreate(ContactFields):
+    photo: str | None = Field(default=None, max_length=2796300)
     full_name: Name
     social_name: Name | None = None
     registration_number: RegistrationNumber
@@ -103,6 +104,7 @@ def validate_discente_dates(admission_date: date, birth_date: date | None) -> No
 
 
 class DiscenteUpdate(ContactFields):
+    photo: str | None = Field(default=None, max_length=2796300)
     expected_updated_at: AwareDatetime
     full_name: Name | None = None
     social_name: Name | None = None
@@ -149,6 +151,7 @@ class DiscenteSummary(BaseModel):
 
 
 class DiscenteResponse(DiscenteSummary):
+    photo_path: str | None = None
     email: EmailStr | None
     phone: str | None
     birth_date: date | None

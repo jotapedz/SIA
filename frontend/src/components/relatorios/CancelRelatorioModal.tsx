@@ -6,7 +6,7 @@ export function CancelRelatorioModal({ onBack, onConfirm }: { onBack: () => void
   return <Modal title="Cancelar operação?" compact onClose={onBack}>
     <div className={styles.cancelDescription}>
       <p>Deseja cancelar a operação realizada?</p>
-      <p>Esta ação não poderá ser desfeita e todas as informações associadas serão removidas permanentemente.</p>
+      <p>As alterações não salvas serão descartadas.</p>
     </div>
     <div className={styles.cancelActions}>
       <Button variant="text" onClick={onBack}>Voltar</Button>
