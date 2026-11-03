@@ -3,6 +3,10 @@ import { ContentPage } from "../../components/layout/ContentPage";
 import { UsuarioCard } from "../../components/usuarios/UsuarioCard";
 import { UsuarioCreateModal } from "../../components/usuarios/UsuarioCreateModal";
 import { UsuarioDetailsModal } from "../../components/usuarios/UsuarioDetailsModal";
+import { UsuarioEditModal } from "../../components/usuarios/UsuarioEditModal";
+import { UsuarioDeleteModal } from "../../components/usuarios/UsuarioDeleteModal";
+import { useAuth } from "../../hooks/useAuth";
+import type { Usuario } from "../../types/api";
 import { UsuarioFilters, defaultUsuarioFilters } from "../../components/usuarios/UsuarioFilters";
 import { Button } from "../../components/ui/Button";
 import { Pagination } from "../../components/ui/Pagination";
@@ -13,12 +17,15 @@ import { listUsuarios } from "../../services/usuarios";
 import styles from "../../components/usuarios/Usuarios.module.css";
 
 export function UsuariosPage() {
+  const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(defaultUsuarioFilters);
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<Usuario | null>(null);
   const [notice, setNotice] = useState("");
   const debouncedSearch = useDebouncedValue(search);
   const criteria = useMemo(() => ({ ...filters, q: debouncedSearch }), [filters, debouncedSearch]);
@@ -47,13 +54,21 @@ export function UsuariosPage() {
     <section aria-label="Lista de usuários" aria-busy={loading}>
       {loading || error ? <ResourceMessage loading={loading} error={error} notFound={status === 404} onRetry={reload} />
         : data && data.items.length > 0 ? <div className={styles.grid}>
-          {data.items.map((user) => <UsuarioCard key={user.id} user={user} onDetails={() => setSelected(user.id)} />)}
+          {data.items.map((user) => <UsuarioCard key={user.id} user={user} onDetails={() => setSelected(user.id)} onEdit={() => setEditing(user.id)}
+            onDelete={() => { setNotice(""); setDeleting(user); }} deletionDisabled={profile?.email.toLowerCase() === user.email.toLowerCase()} />)}
         </div> : <div className={styles.empty}><h2>Nenhum usuário encontrado</h2>
           {(search || filters.role || filters.status) && <Button variant="text" onClick={resetFilters}>Limpar busca e filtros</Button>}
         </div>}
     </section>
-    {data && <Pagination total={data.total} page={page} pageSize={data.page_size} onChange={setPage} label="usuários" busy={loading} />}
+    {data && <Pagination total={data.total} page={page} pageSize={data.page_size} onChange={setPage} label="usuários" singularLabel="usuário" busy={loading} />}
     {selected !== null && <UsuarioDetailsModal id={selected} onClose={() => setSelected(null)} />}
+    {deleting && <UsuarioDeleteModal user={deleting} onClose={() => setDeleting(null)}
+      onReload={() => { setDeleting(null); reload(); }} onDeleted={() => {
+        setDeleting(null); setNotice("Usuário excluído com sucesso. Os registros associados foram preservados."); reload();
+      }} />}
+    {editing !== null && <UsuarioEditModal id={editing} onClose={() => setEditing(null)} onUpdated={() => {
+      setEditing(null); setNotice("Usuário atualizado com sucesso."); reload();
+    }} />}
     {creating && <UsuarioCreateModal onClose={() => { setCreating(false); reload(); }} onCreated={() => {
       setCreating(false); setNotice("Usuário cadastrado com sucesso."); resetFilters(); reload();
     }} />}

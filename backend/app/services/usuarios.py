@@ -12,10 +12,10 @@ USER_COLUMNS = """
 """
 
 
-async def get_usuario_or_404(session: AsyncSession, usuario_id: int) -> UsuarioResponse:
+async def get_usuario_or_404(session: AsyncSession, usuario_id: int, *, lock: bool = False) -> UsuarioResponse:
     result = await session.execute(text(f"""
         SELECT {USER_COLUMNS} FROM public."Perfil"
-        WHERE id_perfil = :id AND data_exclusao IS NULL
+        WHERE id_perfil = :id AND data_exclusao IS NULL {"FOR UPDATE" if lock else ""}
     """), {"id": usuario_id})
     row = result.mappings().one_or_none()
     if row is None:

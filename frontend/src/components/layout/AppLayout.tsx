@@ -9,6 +9,8 @@ export function AppLayout({ authenticated = false }: { authenticated?: boolean }
   useEffect(() => {
     window.scrollTo(0, 0);
     const title = pathname === "/usuarios" ? "Usuários"
+      : pathname === "/perfil/redefinir-email" ? "Redefinir e-mail"
+      : pathname === "/perfil/redefinir-senha" ? "Redefinir senha"
       : pathname.startsWith("/relatorios/") && pathname.endsWith("/editar") ? "Editar relatório"
       : pathname.includes("/relatorios/novo") ? "Adicionar relatório"
       : pathname.startsWith("/relatorios/") ? "Relatório"
@@ -28,6 +30,6 @@ export function AppLayout({ authenticated = false }: { authenticated?: boolean }
     <Header authenticated={authenticated} />
     {breadcrumbs.length > 0 && <Breadcrumb items={breadcrumbs} />}
     <Outlet />
-    <Footer authenticated={authenticated} />
+    <Footer />
   </div>;
 }

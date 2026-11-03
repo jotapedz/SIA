@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useDiscentes } from "../../hooks/useDiscentes";
@@ -12,6 +13,7 @@ import styles from "./DiscentesPage.module.css";
 
 export function DiscentesPage() {
   const { session } = useAuth();
+  const { state } = useLocation();
   const token = session!.access_token;
   const [home, setHome] = useState<Home | null>(null);
   const [homeError, setHomeError] = useState("");
@@ -21,7 +23,7 @@ export function DiscentesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] = useState(state?.deleted === true ? "Discente excluído com sucesso." : "");
   const debouncedSearch = useDebouncedValue(search);
   const query = useMemo(() => ({ ...filters, q: debouncedSearch }), [filters, debouncedSearch]);
   const { data, loading, error } = useDiscentes(token, query, page, revision);

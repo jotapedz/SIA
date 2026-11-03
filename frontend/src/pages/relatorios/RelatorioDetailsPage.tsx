@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ContentPage } from "../../components/layout/ContentPage";
 import { Button } from "../../components/ui/Button";
+import { HistoryModal } from "../../components/ui/HistoryModal";
 import { ResourceMessage } from "../../components/ui/ResourceMessage";
 import { CadastroReportDetails } from "../../components/relatorios/CadastroReportDetails";
 import { CancelSavedRelatorioModal } from "../../components/relatorios/CancelSavedRelatorioModal";
@@ -27,6 +28,7 @@ export function RelatorioDetailsPage() {
   const [cancelError, setCancelError] = useState("");
   const [cancelConflict, setCancelConflict] = useState(false);
   const [notice, setNotice] = useState("");
+  const [history, setHistory] = useState(false);
   const locked = useRef(false);
   useEffect(() => { setTarget(null); setCancelError(""); setCancelConflict(false); setNotice(""); }, [id]);
   async function confirmCancellation() {
@@ -58,10 +60,13 @@ export function RelatorioDetailsPage() {
           {notice || (state?.updated === true ? "Relatório atualizado com sucesso." : "Relatório adicionado com sucesso.")}
         </p>}
         {definition && data.report_type !== "CADASTRO" && <h2 className={`${styles.subtitle} ${data.status !== "CANCELADO" ? styles.detailSubtitle : ""}`}>{definition.label}</h2>}
-        {data.status !== "CANCELADO" && <div className={styles.actions}>
+        <div className={styles.actions}>
+          <Button onClick={() => window.print()}><img src="/assets/download.svg" alt="" /> Exportar relatório</Button>
+        {data.status !== "CANCELADO" && <>
           <Button onClick={() => { setTarget(data); setCancelError(""); setCancelConflict(false); }}><img src="/assets/delete-white.svg" alt="" /> Excluir relatório</Button>
           {definition && <Link className={styles.primaryLink} to={`/relatorios/${data.id}/editar`}><img src="/assets/edit.svg" alt="" /> Editar relatório</Link>}
-        </div>}
+        </>}
+        </div>
         <article className={styles.report} aria-labelledby="report-title">
           <div className={styles.reportHeader}>
             <div>
@@ -72,9 +77,10 @@ export function RelatorioDetailsPage() {
                 <span className={styles.statusBadge}>{reportStatusLabels[data.status] || data.status}</span>
               </div>
               <p className={styles.author}>Por {data.author_name}</p>
+              <p className={styles.printStudent}>Discente: {data.discente_social_name || data.discente_name}</p>
               {data.closed_at && <p>Conclusão: {formatDate(data.closed_at)}</p>}
             </div>
-            <Button variant="outline" disabled title="Histórico previsto para uma próxima etapa">
+            <Button variant="outline" onClick={() => setHistory(true)}>
               <img src="/assets/visibility.svg" alt="" /> Visualizar histórico
             </Button>
           </div>
@@ -84,6 +90,7 @@ export function RelatorioDetailsPage() {
             </section>)}
           </div>
         </article>
+        {history && <HistoryModal kind="relatorios" id={data.id} onClose={() => setHistory(false)} />}
         {target?.id === data.id && <CancelSavedRelatorioModal busy={cancelling} error={cancelError} blocked={cancelConflict}
           onBack={() => { if (!cancelling) { setTarget(null); if (cancelConflict) reload(); } }} onConfirm={() => void confirmCancellation()} />}
       </>}

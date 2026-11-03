@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { Discente } from "../../types/api";
 import { formatDate } from "../../lib/format";
 import { Button } from "../ui/Button";
+import { HistoryModal } from "../ui/HistoryModal";
+import { DiscentePhoto } from "./DiscentePhoto";
 import styles from "./DiscenteDetails.module.css";
 
 function Info({ items }: { items: [string, string | null | undefined][] }) {
@@ -12,18 +14,22 @@ function Info({ items }: { items: [string, string | null | undefined][] }) {
 
 export function DiscenteDetails({ discente }: { discente: Discente }) {
   const [expanded, setExpanded] = useState(true);
+  const [history, setHistory] = useState(false);
   const status = discente.status.trim().toUpperCase();
   const contact = discente.family_contact;
   return <section className={styles.panel} aria-labelledby="discente-name">
     <div className={styles.summary}>
-      <div>
+      <div className={styles.identity}>
+        <div className={styles.photoSlot} hidden={!expanded}><DiscentePhoto discente={discente} /></div>
+        <div>
         <h2 id="discente-name">{discente.social_name || discente.full_name}</h2>
         <span className={`${styles.status} ${status === "ATIVO" ? styles.active : ""}`}>
           {status === "ATIVO" && <img src="/assets/status-active.svg" alt="" />}
           {status === "ATIVO" ? "Ativo" : status === "INATIVO" ? "Inativo" : discente.status}
         </span>
+        </div>
       </div>
-      <Button variant="outline" disabled title="Histórico previsto no RF18">
+      <Button variant="outline" onClick={() => setHistory(true)}>
         <img src="/assets/visibility.svg" alt="" /> Visualizar histórico
       </Button>
     </div>
@@ -51,5 +57,6 @@ export function DiscenteDetails({ discente }: { discente: Discente }) {
       <img className={expanded ? styles.expanded : styles.collapsed} src="/assets/details-chevron.svg" alt="" />
       {expanded ? "Ocultar detalhes" : "Exibir detalhes"}
     </button>
+    {history && <HistoryModal kind="discentes" id={discente.id} onClose={() => setHistory(false)} />}
   </section>;
 }

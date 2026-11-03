@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { FormError } from "../../components/ui/FormError";
 import { LoadingPage } from "../../components/ui/LoadingPage";
+import { redefinePassword, PasswordUpdateError, validateNewPassword } from "../../services/profileSecurity";
 
 export function ResetPasswordPage() {
   const { session, status, signOut } = useAuth();
@@ -14,19 +15,19 @@ export function ResetPasswordPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const hasMismatch = confirmation.length > 0 && password !== confirmation;
-  const canSubmit = password.length >= 6 && confirmation.length > 0 && !hasMismatch && !isSubmitting && !!session;
+  const canSubmit = !validateNewPassword(password, confirmation) && !isSubmitting && !!session;
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
     setIsSubmitting(true);
     setErrorMessage("");
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
+      await redefinePassword(supabase.auth, password, confirmation);
       await signOut();
       navigate("/redefinir-senha/sucesso", { replace: true });
-    } catch {
-      setErrorMessage("Não foi possível concluir a redefinição. Verifique se o link ainda é válido e tente novamente.");
+    } catch (reason) {
+      setErrorMessage(reason instanceof PasswordUpdateError && reason.code === "same_password" ? reason.message
+        : "Não foi possível concluir a redefinição. Verifique se o link ainda é válido e tente novamente.");
     } finally { setIsSubmitting(false); }
   }
   async function cancel() {

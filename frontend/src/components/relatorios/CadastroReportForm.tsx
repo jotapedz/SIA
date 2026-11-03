@@ -145,7 +145,7 @@ function CadastroWizard({ discenteId, catalog, report, onReload }: {
     <div className={styles.formActions}>
       <Button variant="text" disabled={submitting} onClick={() => setConfirmCancel(true)}>Cancelar</Button>
       {step > 0 && <Button variant="outline" disabled={submitting} onClick={() => setStep(step - 1)}>Voltar</Button>}
-      {step < 2 ? <Button disabled={submitting || !stepValid} onClick={() => setStep(step + 1)}>Próximo</Button>
+      {step < 2 ? <Button disabled={submitting || !stepValid} onClick={(event) => { event.preventDefault(); setStep(step + 1); }}>Próximo</Button>
         : <Button type="submit" disabled={submitting || blocked || !allValid || (!!report && !changed)}>{submitting ? "Salvando..." : report ? "Salvar" : "Adicionar"}</Button>}
     </div>
   </form>

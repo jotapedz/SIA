@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr, StringConstraints, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, SecretStr, StringConstraints, field_validator
 
 
 class UsuarioRole(str, Enum):
@@ -47,8 +47,21 @@ class UsuarioResponse(BaseModel):
     updated_at: datetime
 
 
+class UsuarioUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    full_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=150)]
+    role: UsuarioRole
+    status: UsuarioStatus
+    expected_updated_at: AwareDatetime
+
+
 class UsuarioListResponse(BaseModel):
     items: list[UsuarioResponse]
     total: int
     page: int
     page_size: int
+
+
+class UsuarioDelete(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_updated_at: AwareDatetime

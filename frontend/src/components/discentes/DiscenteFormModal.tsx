@@ -10,6 +10,7 @@ import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Field, SelectField } from "../ui/Field";
 import { FormError } from "../ui/FormError";
+import { DiscentePhotoPicker } from "./DiscentePhoto";
 import styles from "./Discentes.module.css";
 
 export function DiscenteFormModal({ discente, onClose, onSaved, onReload }: {
@@ -27,10 +28,18 @@ export function DiscenteFormModal({ discente, onClose, onSaved, onReload }: {
   const [serverErrors, setServerErrors] = useState<FormErrors>({});
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [photo, setPhoto] = useState<string | null | undefined>(undefined);
+  const [readingPhoto, setReadingPhoto] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
+  const confirmButton = useRef<HTMLDivElement>(null);
   const locked = useRef(false);
   const errors = validateDiscenteForm(values, hasFamily);
   const canSubmit = Object.keys(errors).length === 0 && !Object.values(serverErrors).some(Boolean)
-    && !submitting && !stale && (!discente || Object.keys(changes).length > 0);
+    && !submitting && !readingPhoto && !stale && (!discente || Object.keys(changes).length > 0 || photo !== undefined);
+
+  useEffect(() => {
+    if (confirmSave) confirmButton.current?.querySelector("button")?.focus();
+  }, [confirmSave]);
 
   useEffect(() => {
     if (submitting) return;
@@ -58,20 +67,27 @@ export function DiscenteFormModal({ discente, onClose, onSaved, onReload }: {
     };
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || locked.current || !session) return;
     if (!event.currentTarget.reportValidity()) return;
+    if (discente) setConfirmSave(true);
+    else void persist();
+  }
+
+  async function persist() {
+    if (!canSubmit || locked.current || !session) return;
     locked.current = true;
     setSubmitting(true);
     setMessage("");
     setServerErrors({});
     try {
       const saved = discente
-        ? await updateDiscente(session.access_token, discente.id, { ...changes, expected_updated_at: expectedUpdatedAt })
-        : await createDiscente(session.access_token, payload);
+        ? await updateDiscente(session.access_token, discente.id, { ...changes, ...(photo !== undefined ? { photo } : {}), expected_updated_at: expectedUpdatedAt })
+        : await createDiscente(session.access_token, { ...payload, ...(photo !== undefined ? { photo } : {}) });
       onSaved(saved);
     } catch (error) {
+      setConfirmSave(false);
       const next: FormErrors = {};
       if (error instanceof ApiError) {
         if (error.code === "stale_record") setStale(true);
@@ -92,12 +108,20 @@ export function DiscenteFormModal({ discente, onClose, onSaved, onReload }: {
     } finally { locked.current = false; setSubmitting(false); }
   }
 
-  return <Modal title={discente ? "Editar discente" : "Cadastrar discente"} busy={submitting} onClose={onClose}>
-    <form onSubmit={submit} noValidate className={styles.createForm}>
+  return <Modal title={confirmSave ? "Salvar alterações?" : discente ? "Editar discente" : "Cadastrar discente"}
+    compact={confirmSave} busy={submitting} onClose={() => { if (!submitting) { if (confirmSave) setConfirmSave(false); else onClose(); } }}>
+    {confirmSave ? <>
+      <p>Deseja salvar as alterações realizadas neste discente?</p>
+      <div ref={confirmButton} className={styles.modalActions}>
+        <Button variant="text" disabled={submitting} onClick={() => setConfirmSave(false)}>Cancelar</Button>
+        <Button disabled={submitting} onClick={() => void persist()}>{submitting ? "Salvando..." : "Salvar"}</Button>
+      </div>
+    </> : <form onSubmit={submit} noValidate className={styles.createForm}>
       {message && <FormError title="Não foi possível salvar">{message}</FormError>}
       {stale && onReload && <Button variant="text" onClick={onReload}>Recarregar cadastro</Button>}
       <fieldset disabled={submitting} className={styles.formSection}>
         <legend>Informações gerais</legend>
+        <DiscentePhotoPicker discente={discente} value={photo} onChange={setPhoto} onBusy={setReadingPhoto} />
         <div className={styles.formGrid}>
           <Field {...field("full_name")} label="Nome completo" placeholder="Digite o nome completo" autoComplete="name" maxLength={150} required />
           <Field {...field("social_name")} label="Nome social" placeholder="Digite o nome social" maxLength={150} />
@@ -136,6 +160,6 @@ export function DiscenteFormModal({ discente, onClose, onSaved, onReload }: {
         <Button variant="text" disabled={submitting} onClick={onClose}>Cancelar</Button>
         <Button type="submit" disabled={!canSubmit}>{submitting ? "Salvando..." : discente ? "Salvar" : "Cadastrar"}</Button>
       </div>
-    </form>
+    </form>}
   </Modal>;
 }

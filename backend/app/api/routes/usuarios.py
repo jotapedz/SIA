@@ -7,12 +7,63 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.dependencies.profile import get_authorized_profile
 from app.schemas.profile import ProfileResponse
-from app.schemas.usuario import UsuarioCreate, UsuarioListResponse, UsuarioResponse, UsuarioRole, UsuarioStatus
+from app.schemas.usuario import UsuarioCreate, UsuarioDelete, UsuarioListResponse, UsuarioResponse, UsuarioRole, UsuarioStatus, UsuarioUpdate
+from app.services.profile import get_profile_id
+from app.services.historico import registrar
 from app.services.supabase_admin import SupabaseAdmin, provisioning_error
 from app.services.usuarios import USER_COLUMNS, get_usuario_or_404
 
 
 router = APIRouter(prefix="/v1/usuarios", tags=["usuarios"])
+
+
+@router.post("/{usuario_id}/exclusao", summary="Excluir usuário preservando a autoria dos registros")
+async def excluir_usuario(
+    data: UsuarioDelete,
+    usuario_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, bool]:
+    current = await get_usuario_or_404(session, usuario_id, lock=True)
+    if current.updated_at != data.expected_updated_at:
+        raise HTTPException(status_code=409, detail={"code": "stale_record", "message": "Este usuário foi alterado. Recarregue a listagem antes de excluir."})
+    actor_id = await get_profile_id(session, profile)
+    if actor_id == usuario_id:
+        raise HTTPException(status_code=422, detail="Não é possível excluir o próprio usuário.")
+    await session.execute(text('''
+        WITH instante AS (SELECT clock_timestamp() AS agora)
+        UPDATE public."Perfil"
+        SET data_exclusao = instante.agora, data_atualizacao = instante.agora,
+            is_active = FALSE, status = 'INATIVO'
+        FROM instante WHERE id_perfil = :id AND data_exclusao IS NULL
+    '''), {"id": usuario_id})
+    await registrar(session, profile, "USUARIO", usuario_id, "Exclusão de usuário",
+                    campos=["data_exclusao", "is_active", "status"])
+    await session.commit()
+    return {"deleted": True}
+
+
+@router.patch("/{usuario_id}", response_model=UsuarioResponse, summary="Editar usuário (RF13)")
+async def update_usuario(
+    data: UsuarioUpdate,
+    usuario_id: int = Path(ge=1, le=9223372036854775807),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> UsuarioResponse:
+    current = await get_usuario_or_404(session, usuario_id, lock=True)
+    if current.updated_at != data.expected_updated_at:
+        raise HTTPException(status_code=409, detail={"code": "stale_record", "message": "Este usuário foi alterado. Recarregue os dados antes de salvar."})
+    actor_id = await get_profile_id(session, profile)
+    if actor_id == usuario_id and data.status == UsuarioStatus.INATIVO:
+        raise HTTPException(status_code=422, detail="Não é possível desativar o próprio acesso.")
+    await session.execute(text('''UPDATE public."Perfil"
+        SET nome = :nome, tipo_perfil = :role, status = :status,
+            is_active = :active, data_atualizacao = clock_timestamp()
+        WHERE id_perfil = :id'''), {"nome": data.full_name, "role": data.role.value,
+            "status": data.status.value, "active": data.status == UsuarioStatus.ATIVO, "id": usuario_id})
+    updated = await get_usuario_or_404(session, usuario_id)
+    await session.commit()
+    return updated
 
 
 @router.get("", response_model=UsuarioListResponse, summary="Listar usuários (RF11)")

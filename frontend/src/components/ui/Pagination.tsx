@@ -1,13 +1,13 @@
 import { Button } from "./Button";
 import styles from "./Controls.module.css";
 
-export function Pagination({ total, page, pageSize, onChange, label, busy = false }: {
-  total: number; page: number; pageSize: number; onChange: (page: number) => void; label: string; busy?: boolean;
+export function Pagination({ total, page, pageSize, onChange, label, singularLabel, busy = false }: {
+  total: number; page: number; pageSize: number; onChange: (page: number) => void; label: string; singularLabel?: string; busy?: boolean;
 }) {
   if (total === 0) return null;
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return <nav className={styles.pagination} aria-label={`Paginação de ${label}`}>
-    <span>{total} {label}</span>
+    <span>{total} {total === 1 ? singularLabel || label : label}</span>
     <div>
       <Button variant="text" disabled={busy || page <= 1} onClick={() => onChange(page - 1)}>Anterior</Button>
       <span aria-live="polite">Página {page} de {pages}</span>

@@ -141,10 +141,10 @@ Professores poderão receber orientações produzidas pelos Agentes de Acessibil
 | **RF10**      | **O Agente de Acessibilidade** deve cancelar ou desativar relatórios **por meio da funcionalidade de gerenciamento dos registros**, **para impedir que relatórios inválidos ou não aplicáveis permaneçam ativos**.                                           |      Média |   Done     |
 | **RF11**      | **O Agente de Acessibilidade** deve visualizar os usuários cadastrados **por meio da listagem de usuários**, **para consultar os usuários registrados no sistema**.                                                                                           |      Baixa |   Done     |
 | **RF12**      | **O Agente de Acessibilidade** deve cadastrar usuários **por meio de um formulário de cadastro**, **para conceder acesso ao sistema a novos usuários**.                                                                                                      |       Alta |   Done     |
-| **RF13**      | **O Agente de Acessibilidade** deve editar as informações dos usuários **por meio da funcionalidade de edição**, **para manter seus dados atualizados**.                                                                                                     |       Alta |   In progress     |
-| **RF14**      | **O Agente de Acessibilidade** deve visualizar seu próprio perfil **por meio da área de perfil**, **para consultar seus dados cadastrados e informações de acesso**.                                                                                          |       Alta |   In progress     |
-| **RF15**      | **O Agente de Acessibilidade** deve alterar seu e-mail **por meio da área de gerenciamento do perfil**, **para manter seu endereço de e-mail atualizado**.                                                                                                   |      Baixa |    In progress    |
-| **RF16**      | **O Agente de Acessibilidade** deve alterar sua senha **por meio da área de gerenciamento do perfil**, **para manter a segurança de suas credenciais de acesso**.                                                                                            |      Média |    In progress    |
+| **RF13**      | **O Agente de Acessibilidade** deve editar as informações dos usuários **por meio da funcionalidade de edição**, **para manter seus dados atualizados**.                                                                                                     |       Alta |   Implementado (validação local)     |
+| **RF14**      | **O Agente de Acessibilidade** deve visualizar seu próprio perfil **por meio da área de perfil**, **para consultar seus dados cadastrados e informações de acesso**.                                                                                          |       Alta |   Implementado (validação local)     |
+| **RF15**      | **O Agente de Acessibilidade** deve alterar seu e-mail **por meio da área de gerenciamento do perfil**, **para manter seu endereço de e-mail atualizado**.                                                                                                   |      Baixa |    Implementado (validação local)    |
+| **RF16**      | **O Agente de Acessibilidade** deve alterar sua senha **por meio da área de gerenciamento do perfil**, **para manter a segurança de suas credenciais de acesso**.                                                                                            |      Média |    Implementado (validação local)    |
 | **RF17**      | **O Agente de Acessibilidade** deve registrar atendimentos e contribuições **por meio de um formulário de registro**, **para documentar as ações realizadas no acompanhamento dos discentes**.                                                               |      Média |        |
 | **RF18**      | **O Agente de Acessibilidade** deve consultar o histórico de acompanhamento de um discente **por meio da área de histórico**, **para acompanhar os registros realizados durante seu atendimento**.                                                           |       Alta |        |
 | **RF19**      | **O Agente de Acessibilidade** deve registrar o Termo de Ciência **por meio da funcionalidade de registro do documento**, **para documentar a ciência do discente**.                                                                                         |       Alta |        |
@@ -249,7 +249,6 @@ O conteúdo definitivo do termo, sua fundamentação e sua forma de aceite ainda
 O sistema deverá registrar operações relevantes, como:
 
 * Criação;
-* Consulta de informações protegidas;
 * Alteração;
 * Ativação;
 * Desativação;
@@ -415,6 +414,62 @@ sia/
 
 
 ---
+
+## Telas e fluxos disponíveis
+
+As telas de discentes e dos seis tipos de relatório seguem os componentes visuais existentes: Cadastro, Acompanhamento, Ações de sucesso, Recursos de acessibilidade, Barreiras e Observações. O relatório de Cadastro utiliza três etapas e mantém as escolhas ao avançar ou voltar. O salvamento ocorre apenas ao selecionar Adicionar ou confirmar Salvar.
+
+Os detalhes de discentes e relatórios possuem um modal de histórico com data, operação e usuário. O histórico do discente mostra somente operações do próprio cadastro; as operações dos relatórios aparecem exclusivamente no histórico do respectivo relatório. Os registros usam a tabela existente `HistoricoAcesso`, com as colunas `id_historico`, `id_perfil`, `entidade`, `id_registro`, `acao` e `data_evento`. Nesta etapa, os campos JSON de dados anteriores e novos não recebem cópias dos formulários. Operações anteriores à ativação só aparecem se já estiverem registradas nessa tabela.
+
+As edições de relatório geram uma única operação, Alteração de relatório, acompanhada do nome atual do relatório na interface. Não há detalhamento por campo ou seção. Operações antigas de edição também são exibidas com essa descrição genérica, sem modificar ou excluir os registros do banco. Adição e cancelamento mantêm suas descrições próprias. O título exibido acompanha o cadastro atual do relatório, não é uma cópia do título na data do evento.
+
+A edição do discente solicita confirmação antes de enviar as alterações. Cancelar a confirmação retorna ao formulário mantendo o preenchimento. Cada campo efetivamente alterado gera uma linha específica no histórico, como Edição de nome completo ou Edição de status. O contato familiar distingue adição, remoção e edição de seus campos. A coluna `campos_afetados` guarda apenas os identificadores dos campos, sem seus valores. Registros antigos com a descrição genérica Edição de discente permanecem assim, pois não continham essa identificação.
+
+A ação Excluir discente preenche `data_exclusao`, preservando os registros no banco e retirando o discente e seus relatórios das consultas. Para apenas desativar um discente, utilize o status no formulário de edição. A ação Excluir relatório mantém o cancelamento previsto no RF10; o relatório permanece disponível para consulta e não pode ser editado.
+
+Exportar relatório abre a impressão do navegador, que permite escolher Salvar como PDF. A versão para impressão contém os dados do relatório e o nome do discente, sem os menus e botões da aplicação.
+
+RF13–RF16 foram complementados com edição de nome, perfil e status dos usuários, consulta do próprio perfil e alteração de e-mail e senha. Clicar no nome do usuário no cabeçalho abre o modal Perfil, com nome, tipo de acesso, e-mail e os botões Redefinir e-mail e Redefinir senha. Esses botões abrem telas separadas com o formulário centralizado. Não há uma página de detalhes do próprio perfil. O endereço antigo `/perfil` abre o modal sobre a lista de discentes.
+
+O e-mail é alterado pelo titular pelo Supabase Auth; a confirmação segue a configuração do projeto. A redefinição de senha valida tamanho, confirmação e a rejeição `same_password` do Supabase, exibindo uma mensagem específica quando a senha informada é a atual. Essa comparação é feita no serviço de autenticação. O próprio usuário não pode desativar seu acesso.
+
+O cadastro administrativo de usuários mantém o comportamento original: utiliza `email_confirm: True` e não exige confirmação da caixa de entrada. A troca pelo titular é um fluxo separado. O texto atual da tela orienta a confirmação somente no novo endereço e pressupõe `Secure email change` desativado no Supabase. O serviço diferencia erros de endereço recusado, envio não autorizado, limite de envio, sessão inválida e tempo de resposta excedido.
+
+O envio das mensagens pode usar SMTP personalizado, configurado no painel do Supabase, sem alterar os comandos de execução ou o código. Credenciais SMTP e senhas de app não devem ser versionadas. Essa configuração, a opção `Secure email change` e as URLs permitidas precisam ser conferidas em cada ambiente; não são aplicadas pela migração SQL.
+
+A exclusão de usuários está disponível nos cartões da listagem, mediante confirmação. A operação preenche `Perfil.data_exclusao`, altera o status para `INATIVO` e define `is_active = false`. O perfil é mantido no banco com o mesmo identificador e nome, preservando a autoria de relatórios e históricos e os cadastros feitos por ele. A conta no Supabase Auth também é mantida; mesmo que ainda exista uma sessão de autenticação, o backend recusa o acesso ao SIA para perfis excluídos. Nenhum registro associado é apagado ou transferido para outro usuário.
+
+Não é permitido excluir o próprio usuário. Uma alteração concorrente no cadastro exige recarregar a listagem antes de excluir. A exclusão é registrada em `HistoricoAcesso` com a entidade `Perfil`, na mesma transação. Essa funcionalidade utiliza colunas já usadas pelo projeto e não exige uma nova migração. O e-mail permanece reservado ao perfil existente; excluir não permite criar outra conta com o mesmo endereço. Para apenas suspender um acesso e mantê-lo na listagem, utilize Editar → Status → Inativo.
+
+Os históricos cobrem as operações de cadastro, edição, cancelamento de relatórios e exclusão lógica de discentes. Consultas de discentes e relatórios não geram eventos; as consultas registradas anteriormente também ficam ocultas na listagem, sem apagar os registros do banco. Isso atende às telas enviadas e a parte de RF18/RF21; não representa a conclusão de contribuições, atendimentos ou Termo de Ciência.
+
+### Atualização do Supabase
+
+Antes de executar este código contra o banco compartilhado, aplique as migrações em ordem até `database/migrations/0006_historico_perfil.sql`, executando apenas as que ainda não foram aplicadas. A migração 0006 usa a tabela `HistoricoAcesso` existente, adiciona um índice para consulta, restringe seu acesso direto e cria um gatilho para sincronizar `Perfil.email` quando `auth.users.email` mudar após a confirmação. Não cria outra tabela de histórico, não apaga registros e não copia senhas para `Perfil`.
+
+Para fotos, aplique também `database/migrations/0007_discente_foto.sql`. Ela adiciona somente `Discente.foto_path`, texto opcional, sem alterar os cadastros existentes. Configure no Storage um bucket privado com ID `Fotos Discentes`; o backend recusa enviar ou assinar imagens se ele estiver público. Não são necessárias políticas de acesso direto para o frontend: as operações passam pelo backend e suas permissões de acesso ao SIA. Informe a chave administrativa em `SUPABASE_SECRET_KEY` somente no backend. O ID pode ser alterado por `SUPABASE_STUDENT_PHOTOS_BUCKET` no ambiente do backend.
+
+O cadastro e a edição permitem foto opcional JPG/PNG de até 2 MB e 16 megapixels. A prévia é circular e os botões permitem remover ou desfazer antes de salvar. O backend valida o conteúdo com Pillow, corrige a orientação e gera JPEG de até 768 pixels, sem os metadados originais. O envio ocorre apenas no salvamento; cancelar o formulário não envia arquivos. A foto aparece ao lado do nome e status somente com os detalhes expandidos. Recolher e expandir mantém a imagem carregada; a primeira abertura depende da conexão com o armazenamento.
+
+O endpoint autenticado `GET /v1/discentes/{id}/foto` disponibiliza um link válido por cinco minutos após verificar o discente e o bucket privado. A interface renova esse link enquanto o componente estiver aberto. Adição, substituição e remoção geram eventos de histórico do discente, sem copiar imagens para a auditoria. A foto anterior só é removida após confirmar o salvamento; falhas de limpeza ou confirmação de commit podem deixar arquivos privados sem referência, para revisão posterior pela equipe. A exclusão lógica do discente mantém o arquivo privado e impede novas consultas pelo endpoint.
+
+Após atualizar esta versão, execute novamente `pip install -r requirements.txt` no ambiente do backend, que agora inclui `Pillow==13.0.0`, e reinicie o servidor. A interface foi conferida com dados fictícios e o Storage foi testado com respostas simuladas; o envio e a leitura no bucket real precisam ser validados no ambiente configurado.
+
+O backend continua acessando o banco por `DATABASE_URL`. A migração deve ser executada com uma conexão administrativa que possa criar o gatilho em `auth.users`. Mantenha o endereço do frontend terminado em `/perfil` na lista de URLs de redirecionamento permitidas no Supabase Auth, além dos endereços já usados pela recuperação de senha. Após a confirmação de e-mail, esse endereço abre o modal Perfil.
+
+As migrações não foram executadas automaticamente no Supabase. A validação local não substitui a conferência do gatilho e das confirmações de e-mail no projeto configurado.
+
+### Verificações locais
+
+```powershell
+cd frontend
+npm run build
+npm test
+cd ../backend
+../.venv/Scripts/python.exe -m unittest discover -s tests -v
+```
+
+Os testes do backend usam dependências simuladas e não gravam no Supabase. Para conferir as telas com dados fictícios, inicie o frontend e abra `/tests/preview.html?path=/discentes/1`. A prévia permite navegar pelas telas, bloqueia as gravações e não faz parte da compilação de produção. Para retornar ao sistema real, abra novamente `/`.
 
 ## Execução do projeto
 

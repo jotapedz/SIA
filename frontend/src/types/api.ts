@@ -34,6 +34,7 @@ export type FamilyContact = {
 };
 
 export type DiscenteCreate = {
+  photo?: string | null;
   full_name: string;
   social_name: string | null;
   registration_number: string;
@@ -48,6 +49,7 @@ export type DiscenteCreate = {
 };
 
 export type Discente = DiscenteSummary & {
+  photo_path?: string | null;
   email: string | null;
   phone: string | null;
   birth_date: string | null;

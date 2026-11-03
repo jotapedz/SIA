@@ -19,7 +19,7 @@ DETAIL_COLUMNS = SUMMARY_COLUMNS + """,
     data_criacao AS created_at, data_atualizacao AS updated_at,
     contato_familiar_nome AS family_name, contato_familiar_parentesco AS family_relationship,
     contato_familiar_telefone AS family_phone, contato_familiar_email AS family_email,
-    contato_familiar_observacao AS family_notes
+    contato_familiar_observacao AS family_notes, foto_path AS photo_path
 """
 
 
@@ -70,3 +70,28 @@ def is_duplicate_registration(error: IntegrityError) -> bool:
     cause = getattr(error.orig, "__cause__", None)
     constraint = getattr(cause, "constraint_name", None) or getattr(error.orig, "constraint_name", None)
     return constraint == "discente_matricula_key"
+
+
+def alteracoes_discente(antes: DiscenteResponse, depois: DiscenteResponse) -> list[tuple[str, str]]:
+    campos = {
+        "full_name": "nome completo", "social_name": "nome social",
+        "registration_number": "matrícula", "course": "curso", "shift": "turno",
+        "status": "status", "admission_date": "data de ingresso",
+        "birth_date": "data de nascimento", "email": "e-mail institucional", "phone": "telefone",
+    }
+    alteracoes = [(campo, f"Edição de {rotulo}") for campo, rotulo in campos.items()
+                  if getattr(antes, campo) != getattr(depois, campo)]
+    anterior, novo = antes.family_contact, depois.family_contact
+    if anterior is None and novo is not None:
+        alteracoes.append(("family_contact", "Adição de contato familiar"))
+    elif anterior is not None and novo is None:
+        alteracoes.append(("family_contact", "Remoção de contato familiar"))
+    elif anterior is not None and novo is not None:
+        campos_familiar = {
+            "full_name": "nome do responsável", "relationship": "grau de parentesco",
+            "phone": "telefone do familiar", "email": "e-mail do familiar", "notes": "observação do contato familiar",
+        }
+        alteracoes.extend((f"family_contact.{campo}", f"Edição de {rotulo}")
+                          for campo, rotulo in campos_familiar.items()
+                          if getattr(anterior, campo) != getattr(novo, campo))
+    return alteracoes

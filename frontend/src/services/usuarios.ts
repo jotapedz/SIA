@@ -11,3 +11,8 @@ export const getUsuario = (token: string, id: number, signal?: AbortSignal) =>
 
 export const createUsuario = (token: string, data: UsuarioCreate) =>
   apiRequest<Usuario>("/v1/usuarios", token, { method: "POST", body: JSON.stringify(data) });
+
+export const deleteUsuario = (token: string, user: Usuario) =>
+  apiRequest<{ deleted: boolean }>(`/v1/usuarios/${user.id}/exclusao`, token, {
+    method: "POST", body: JSON.stringify({ expected_updated_at: user.updated_at }),
+  });

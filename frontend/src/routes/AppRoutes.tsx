@@ -12,6 +12,7 @@ import { RelatorioSelectPage } from "../pages/relatorios/RelatorioSelectPage";
 import { RelatorioDetailsPage } from "../pages/relatorios/RelatorioDetailsPage";
 import { RelatorioEditPage } from "../pages/relatorios/RelatorioEditPage";
 import { UsuariosPage } from "../pages/usuarios/UsuariosPage";
+import { ProfileResetPage } from "../pages/usuarios/ProfileResetPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 
 export function AppRoutes() {
@@ -36,6 +37,9 @@ export function AppRoutes() {
         <Route path="/relatorios/:relatorioId" element={<RelatorioDetailsPage />} />
         <Route path="/relatorios/:relatorioId/editar" element={<RelatorioEditPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
+        <Route path="/perfil" element={<Navigate to="/discentes" replace state={{ openProfile: true }} />} />
+        <Route path="/perfil/redefinir-email" element={<ProfileResetPage key="email" kind="email" />} />
+        <Route path="/perfil/redefinir-senha" element={<ProfileResetPage key="password" kind="password" />} />
         <Route path="/in-progress" element={<Navigate to="/discentes" replace />} />
       </Route>
     </Route>

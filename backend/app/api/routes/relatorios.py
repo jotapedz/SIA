@@ -7,6 +7,8 @@ from app.dependencies.profile import get_authorized_profile
 from app.schemas.profile import ProfileResponse
 from app.schemas.relatorio import CategoriaResponse, RelatorioCancel, RelatorioCreate, RelatorioListResponse, RelatorioResponse, RelatorioSummary, RelatorioUpdate
 from app.services.profile import get_profile_id
+from app.schemas.historico import HistoricoResponse
+from app.services.historico import registrar, consultar
 from app.services.relatorios import (
     CADASTRO_SECTIONS, CATEGORY_COLUMNS, REPORT_JOINS, SUMMARY_COLUMNS, VISIBLE_REPORT,
     get_relatorio_or_404, report_parameters, require_current_report, validate_categories,
@@ -113,6 +115,7 @@ async def create_relatorio(
             VALUES (:report_id, :category_id, :detail)
         """), [{"report_id": report_id, "category_id": item["id"], "detail": item["detail"]} for item in categories])
     report = await get_relatorio_or_404(session, report_id)
+    await registrar(session, profile, "RELATORIO", report_id, "Adição de relatório")
     await session.commit()
     return report
 
@@ -149,6 +152,7 @@ async def update_relatorio(
             VALUES (:report_id, :category_id, :detail)
         """), [{"report_id": relatorio_id, "category_id": item["id"], "detail": item["detail"]} for item in categories])
     updated = await get_relatorio_or_404(session, relatorio_id)
+    await registrar(session, profile, "RELATORIO", relatorio_id, "Alteração de relatório")
     await session.commit()
     return updated
 
@@ -174,5 +178,17 @@ async def cancel_relatorio(
         FROM instante WHERE id_relatorio = :id
     """), {"id": relatorio_id, "actor_id": actor_id})
     cancelled = await get_relatorio_or_404(session, relatorio_id)
+    await registrar(session, profile, "RELATORIO", relatorio_id, "Cancelamento de relatório")
     await session.commit()
     return cancelled
+
+
+@router.get("/relatorios/{relatorio_id}/historico", response_model=HistoricoResponse)
+async def historico_relatorio(
+    relatorio_id: int = Path(ge=1, le=9223372036854775807),
+    page: int = Query(default=1, ge=1), page_size: int = Query(default=10, ge=1, le=100),
+    profile: ProfileResponse = Depends(get_authorized_profile),
+    session: AsyncSession = Depends(get_db_session),
+) -> HistoricoResponse:
+    await get_relatorio_or_404(session, relatorio_id)
+    return await consultar(session, "RELATORIO", relatorio_id, page, page_size)
