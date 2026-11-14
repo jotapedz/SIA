@@ -24,7 +24,7 @@ export function HistoryModal({ kind, id, onClose }: { kind: "discentes" | "relat
           <thead><tr><th scope="col">Data</th><th scope="col">Operação</th><th scope="col">Usuário</th></tr></thead>
           <tbody>{data.items.map((item) => <tr key={item.id}>
             <td><time dateTime={item.occurred_at}>{new Date(item.occurred_at).toLocaleString("pt-BR")}</time></td>
-            <td>{item.operation}{kind === "relatorios" && item.report_title && <div>{item.report_title}</div>}</td><td>{item.user_name}</td>
+            <td>{item.operation}{item.report_title && <div>{item.report_title}</div>}</td><td>{item.user_name}</td>
           </tr>)}</tbody>
         </table></div>
         {!data.items.length && <p role="status">Nenhuma operação registrada. O histórico começa após a ativação desta funcionalidade.</p>}

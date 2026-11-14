@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContentPage } from "../../components/layout/ContentPage";
 import { DiscenteDetails } from "../../components/discentes/DiscenteDetails";
+import { AcompanhamentoPanel } from "../../components/discentes/AcompanhamentoPanel";
 import { DiscenteEditModal } from "../../components/discentes/DiscenteEditModal";
 import { DiscenteDeleteModal } from "../../components/discentes/DiscenteDeleteModal";
 import { RelatorioList } from "../../components/relatorios/RelatorioList";
@@ -32,6 +33,7 @@ export function DiscenteDetailsPage() {
         {success && <div className={styles.success} role="status">{success}</div>}
         <DiscenteDetails key={`discente-${data.id}`} discente={data} />
         <RelatorioList key={`relatorios-${data.id}`} discenteId={data.id} />
+        <AcompanhamentoPanel key={`acompanhamento-${data.id}`} discenteId={data.id} />
         {deleting && <DiscenteDeleteModal discente={data} onClose={() => setDeleting(false)}
           onReload={() => { setDeleting(false); reload(); }} onDeleted={() => navigate("/discentes", { replace: true, state: { deleted: true } })} />}
         {editing && <DiscenteEditModal discente={data} onClose={() => setEditing(false)} onReload={closeAndReload}

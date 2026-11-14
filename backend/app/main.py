@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import discentes, health, home, me, relatorios, usuarios
+from app.api.routes import acompanhamento, discentes, health, home, me, relatorios, usuarios
 from app.core.config import get_settings
 
 
@@ -22,3 +22,4 @@ app.include_router(home.router)
 app.include_router(discentes.router)
 app.include_router(relatorios.router)
 app.include_router(usuarios.router)
+app.include_router(acompanhamento.router)

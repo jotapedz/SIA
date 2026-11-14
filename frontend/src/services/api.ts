@@ -15,6 +15,16 @@ export class ApiError extends Error {
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 export async function apiRequest<T>(path: string, accessToken: string, options: RequestInit = {}): Promise<T> {
+  const response = await apiResponse(path, accessToken, options);
+  return response.json() as Promise<T>;
+}
+
+export async function apiDownload(path: string, accessToken: string): Promise<Blob> {
+  const response = await apiResponse(path, accessToken);
+  return response.blob();
+}
+
+async function apiResponse(path: string, accessToken: string, options: RequestInit = {}): Promise<Response> {
   const headers = new Headers(options.headers);
   headers.set("Authorization", `Bearer ${accessToken}`);
   if (options.body) headers.set("Content-Type", "application/json");
@@ -47,5 +57,5 @@ export async function apiRequest<T>(path: string, accessToken: string, options: 
           : detailMessage || (typeof detail === "string" ? detail : "Verifique os dados informados e tente novamente.");
     throw new ApiError(message, response.status, issues, code);
   }
-  return response.json() as Promise<T>;
+  return response;
 }

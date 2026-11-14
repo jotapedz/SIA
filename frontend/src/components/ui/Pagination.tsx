@@ -8,10 +8,10 @@ export function Pagination({ total, page, pageSize, onChange, label, singularLab
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return <nav className={styles.pagination} aria-label={`Paginação de ${label}`}>
     <span>{total} {total === 1 ? singularLabel || label : label}</span>
-    <div>
+    {pages > 1 && <div>
       <Button variant="text" disabled={busy || page <= 1} onClick={() => onChange(page - 1)}>Anterior</Button>
       <span aria-live="polite">Página {page} de {pages}</span>
       <Button variant="text" disabled={busy || page >= pages} onClick={() => onChange(page + 1)}>Próxima</Button>
-    </div>
+    </div>}
   </nav>;
 }

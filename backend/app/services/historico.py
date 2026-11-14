@@ -23,7 +23,9 @@ async def registrar(session: AsyncSession, profile: ProfileResponse, entidade: s
 async def consultar(session: AsyncSession, entidade: str, registro_id: int,
                     page: int, page_size: int) -> HistoricoResponse:
     report_entity = "lower(h.entidade) IN ('relatorio', 'relatório')"
-    where = "lower(h.entidade) = 'discente' AND h.id_registro = :id" if entidade == "DISCENTE" else f"{report_entity} AND h.id_registro = :id"
+    where = (f"((lower(h.entidade) = 'discente' AND h.id_registro = :id) OR ({report_entity} AND EXISTS "
+             '(SELECT 1 FROM public."Relatório" r WHERE r.id_relatorio = h.id_registro AND r.id_discente = :id)))'
+             if entidade == "DISCENTE" else f"{report_entity} AND h.id_registro = :id")
     where = f"({where}) AND lower(btrim(h.acao)) NOT IN ('consulta de discente', 'consulta de relatório', 'consulta de relatorio')"
     params = {"id": registro_id}
     count = await session.execute(text(f'SELECT count(*) FROM public."HistoricoAcesso" h WHERE {where}'), params)
