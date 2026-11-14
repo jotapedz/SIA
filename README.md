@@ -152,7 +152,7 @@ Professores poderão receber orientações produzidas pelos Agentes de Acessibil
 | **RF21**      | **O sistema** deve registrar as operações realizadas pelo **Agente de Acessibilidade** **por meio de um histórico de auditoria**, **para possibilitar o rastreamento das ações executadas**.                                                                  |      Média | Implementado (validação pendente) |
 | **RF22**      | **O Agente de Acessibilidade** deve filtrar as listagens de discentes, relatórios e usuários **por meio de critérios de busca e filtragem**, **para localizar registros específicos com maior facilidade**.                                                   |      Baixa | Implementado (validação pendente) |
 
-Escopo, migração necessária e roteiro de validação: [RF17–RF22](docs/requisitos-finais.md).
+Migração necessária para RF17 e RF19: `database/migrations/0008_acompanhamento_termos.sql`.
 ---
 
 ## Funcionalidades principais
