@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import bindparam, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.dependencies.profile import get_authorized_profile
 from app.schemas.profile import ProfileResponse
-from app.schemas.relatorio import CategoriaResponse, RelatorioCancel, RelatorioCreate, RelatorioListResponse, RelatorioResponse, RelatorioSummary, RelatorioUpdate
+from app.schemas.relatorio import CategoriaResponse, RelatorioCancel, RelatorioCreate, RelatorioListResponse, RelatorioResponse, RelatorioSummary, RelatorioUpdate, ReportType
 from app.services.profile import get_profile_id
 from app.schemas.historico import HistoricoResponse
 from app.services.historico import registrar, consultar
@@ -37,12 +39,34 @@ async def list_relatorios(
     discente_id: int = Path(ge=1, le=9223372036854775807),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=6, ge=1, le=100),
+    q: str | None = Query(default=None, min_length=1, max_length=200),
+    report_type: ReportType | None = None,
+    report_status: str | None = Query(default=None, alias="status", pattern="^(ABERTO|EM_ATENDIMENTO|ENCAMINHADO|CONCLUIDO|CANCELADO)$"),
+    opened_from: date | None = None,
+    opened_to: date | None = None,
     profile: ProfileResponse = Depends(get_authorized_profile),
     session: AsyncSession = Depends(get_db_session),
 ) -> RelatorioListResponse:
     await require_discente(session, discente_id)
     parameters = {"discente_id": discente_id}
     where = f"r.id_discente = :discente_id AND {VISIBLE_REPORT}"
+    if opened_from and opened_to and opened_from > opened_to:
+        raise HTTPException(status_code=422, detail="O início do período deve ser anterior ou igual ao fim.")
+    if q is not None:
+        where += " AND (strpos(lower(r.resumo_demanda), lower(:q)) > 0 OR strpos(lower(coalesce(r.demanda_apresentada, '')), lower(:q)) > 0)"
+        parameters["q"] = q.strip()
+    if report_type is not None:
+        where += " AND r.tipo_relatorio = :report_type"
+        parameters["report_type"] = report_type.value
+    if report_status is not None:
+        where += " AND r.status::text = :status"
+        parameters["status"] = report_status
+    if opened_from is not None:
+        where += " AND r.data_abertura >= :opened_from"
+        parameters["opened_from"] = opened_from
+    if opened_to is not None:
+        where += " AND r.data_abertura < CAST(:opened_to AS date) + INTERVAL '1 day'"
+        parameters["opened_to"] = opened_to
     count = await session.execute(text(f"SELECT count(*) {REPORT_JOINS} WHERE {where}"), parameters)
     result = await session.execute(text(f"""
         SELECT {SUMMARY_COLUMNS} {REPORT_JOINS} WHERE {where}

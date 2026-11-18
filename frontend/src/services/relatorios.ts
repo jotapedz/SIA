@@ -1,8 +1,13 @@
 import type { CategoriaAcessibilidade, Relatorio, RelatorioCreate, RelatorioList, RelatorioUpdate } from "../types/api";
 import { apiRequest } from "./api";
 
-export const listRelatorios = (token: string, discenteId: number, page: number, signal?: AbortSignal) =>
-  apiRequest<RelatorioList>(`/v1/discentes/${discenteId}/relatorios?page=${page}&page_size=6`, token, { signal });
+export type RelatorioFilters = { q: string; report_type: string; status: string; opened_from: string; opened_to: string };
+
+export const listRelatorios = (token: string, discenteId: number, page: number, signal?: AbortSignal, filters?: RelatorioFilters) => {
+  const params = new URLSearchParams({ page: String(page), page_size: "6" });
+  if (filters) Object.entries(filters).forEach(([key, value]) => { if (value.trim()) params.set(key, value.trim()); });
+  return apiRequest<RelatorioList>(`/v1/discentes/${discenteId}/relatorios?${params}`, token, { signal });
+};
 
 export const getRelatorio = (token: string, id: number, signal?: AbortSignal) =>
   apiRequest<Relatorio>(`/v1/relatorios/${id}`, token, { signal });

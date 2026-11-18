@@ -1,4 +1,6 @@
 .listSection { margin-top: 25px; }
+.filters { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-top: 24px; }
+.filters > div { flex: 1 1 180px; }
 .listSection > h2 { margin: 0; font-size: 24px; line-height: 1.5; }
 .actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 16px; margin: 25px 0; }
 .primaryLink { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 20px; border-radius: 4px; background: var(--color-primary); color: white; font-size: 16px; font-weight: 600; line-height: 24px; text-decoration: none; }
