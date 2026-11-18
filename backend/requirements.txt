@@ -6,3 +6,4 @@ asyncpg==0.30.0
 httpx==0.28.1
 email-validator==2.2.0
 Pillow==13.0.0
+PyJWT[crypto]==2.10.1

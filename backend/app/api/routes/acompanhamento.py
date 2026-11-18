@@ -46,14 +46,41 @@ async def list_registros(
     profile: ProfileResponse = Depends(get_authorized_profile),
     session: AsyncSession = Depends(get_db_session),
 ) -> RegistroList:
-    await require_discente(session, discente_id)
-    params = {"id": discente_id}
-    count = await session.execute(text('SELECT count(*) FROM public."RegistroAcompanhamento" WHERE id_discente = :id'), params)
-    result = await session.execute(text(f'''SELECT {REGISTRO_COLUMNS}
-        FROM public."RegistroAcompanhamento" a JOIN public."Perfil" p ON p.id_perfil = a.id_autor
-        WHERE a.id_discente = :id ORDER BY a.data_atendimento DESC, a.id DESC LIMIT :limit OFFSET :offset'''),
-        {**params, "limit": page_size, "offset": (page - 1) * page_size})
-    return RegistroList(items=[RegistroResponse(**row) for row in result.mappings()], total=count.scalar_one(), page=page, page_size=page_size)
+    result = await session.execute(text(f'''
+        WITH discente_ok AS (
+            SELECT id_discente FROM public."Discente"
+            WHERE id_discente = :id AND data_exclusao IS NULL
+        ),
+        filtered AS (
+            SELECT {REGISTRO_COLUMNS}
+            FROM public."RegistroAcompanhamento" a
+            JOIN public."Perfil" p ON p.id_perfil = a.id_autor
+            WHERE a.id_discente = :id AND EXISTS (SELECT 1 FROM discente_ok)
+        ),
+        counted AS (
+            SELECT (SELECT count(*) FROM discente_ok) AS discente_exists,
+                   (SELECT count(*) FROM filtered) AS total
+        )
+        SELECT counted.discente_exists, counted.total, f.*
+        FROM counted
+        LEFT JOIN LATERAL (
+            SELECT * FROM filtered
+            ORDER BY occurred_on DESC, id DESC
+            LIMIT :limit OFFSET :offset
+        ) f ON TRUE
+    '''), {"id": discente_id, "limit": page_size, "offset": (page - 1) * page_size})
+    rows = result.mappings().all()
+    if not rows or rows[0]["discente_exists"] == 0:
+        raise HTTPException(status_code=404, detail="Discente não encontrado.")
+    total = rows[0]["total"]
+    return RegistroList(
+        items=[
+            RegistroResponse(**{k: v for k, v in row.items() if k not in ("discente_exists", "total")})
+            for row in rows
+            if row["id"] is not None
+        ],
+        total=total, page=page, page_size=page_size,
+    )
 
 
 @router.post("/{discente_id}/atendimentos", response_model=RegistroResponse, status_code=201)
@@ -97,13 +124,41 @@ async def list_termos(
     profile: ProfileResponse = Depends(get_authorized_profile),
     session: AsyncSession = Depends(get_db_session),
 ) -> TermoList:
-    await require_discente(session, discente_id)
-    count = await session.execute(text('SELECT count(*) FROM public."TermoCienciaRegistro" WHERE id_discente = :id'), {"id": discente_id})
-    result = await session.execute(text(f'''SELECT {TERMO_COLUMNS} FROM public."TermoCienciaRegistro" a
-        JOIN public."Perfil" p ON p.id_perfil = a.id_autor WHERE a.id_discente = :id
-        ORDER BY a.data_criacao DESC, a.id DESC LIMIT :limit OFFSET :offset'''),
-        {"id": discente_id, "limit": page_size, "offset": (page - 1) * page_size})
-    return TermoList(items=[TermoResponse(**row) for row in result.mappings()], total=count.scalar_one(), page=page, page_size=page_size)
+    result = await session.execute(text(f'''
+        WITH discente_ok AS (
+            SELECT id_discente FROM public."Discente"
+            WHERE id_discente = :id AND data_exclusao IS NULL
+        ),
+        filtered AS (
+            SELECT {TERMO_COLUMNS}
+            FROM public."TermoCienciaRegistro" a
+            JOIN public."Perfil" p ON p.id_perfil = a.id_autor
+            WHERE a.id_discente = :id AND EXISTS (SELECT 1 FROM discente_ok)
+        ),
+        counted AS (
+            SELECT (SELECT count(*) FROM discente_ok) AS discente_exists,
+                   (SELECT count(*) FROM filtered) AS total
+        )
+        SELECT counted.discente_exists, counted.total, f.*
+        FROM counted
+        LEFT JOIN LATERAL (
+            SELECT * FROM filtered
+            ORDER BY created_at DESC, id DESC
+            LIMIT :limit OFFSET :offset
+        ) f ON TRUE
+    '''), {"id": discente_id, "limit": page_size, "offset": (page - 1) * page_size})
+    rows = result.mappings().all()
+    if not rows or rows[0]["discente_exists"] == 0:
+        raise HTTPException(status_code=404, detail="Discente não encontrado.")
+    total = rows[0]["total"]
+    return TermoList(
+        items=[
+            TermoResponse(**{k: v for k, v in row.items() if k not in ("discente_exists", "total")})
+            for row in rows
+            if row["id"] is not None
+        ],
+        total=total, page=page, page_size=page_size,
+    )
 
 
 @router.post("/{discente_id}/termos", response_model=TermoResponse, status_code=201)

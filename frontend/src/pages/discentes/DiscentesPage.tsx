@@ -3,8 +3,8 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { useDiscentes } from "../../hooks/useDiscentes";
-import { getHome } from "../../services/auth";
-import type { Discente, Home } from "../../types/api";
+import { invalidateApiCache } from "../../services/api";
+import type { Discente } from "../../types/api";
 import { DiscenteCard } from "../../components/discentes/DiscenteCard";
 import { DiscenteCreateModal } from "../../components/discentes/DiscenteCreateModal";
 import { DiscenteFilters, defaultFilters } from "../../components/discentes/DiscenteFilters";
@@ -12,11 +12,9 @@ import { Button } from "../../components/ui/Button";
 import styles from "./DiscentesPage.module.css";
 
 export function DiscentesPage() {
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const { state } = useLocation();
   const token = session!.access_token;
-  const [home, setHome] = useState<Home | null>(null);
-  const [homeError, setHomeError] = useState("");
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
@@ -28,19 +26,7 @@ export function DiscentesPage() {
   const query = useMemo(() => ({ ...filters, q: debouncedSearch }), [filters, debouncedSearch]);
   const { data, loading, error } = useDiscentes(token, query, page, revision);
   const pageCount = Math.max(1, Math.ceil((data?.total ?? 0) / 12));
-  const canCreate = home?.features.some((feature) => feature.method === "POST" && feature.endpoint === "/v1/discentes");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setHome(null);
-    setHomeError("");
-    void getHome(token, controller.signal).then((result) => {
-      if (!controller.signal.aborted) setHome(result);
-    }).catch((reason: unknown) => {
-      if (!controller.signal.aborted) setHomeError(reason instanceof Error ? reason.message : "Não foi possível carregar as funcionalidades.");
-    });
-    return () => controller.abort();
-  }, [token, revision]);
+  const canCreate = Boolean(profile?.is_active);
 
   useEffect(() => {
     if (data && !loading && page > pageCount) setPage(pageCount);
@@ -79,8 +65,8 @@ export function DiscentesPage() {
       </div>
       {showFilters && <DiscenteFilters applied={filters} onApply={(next) => { setFilters(next); setPage(1); }} />}
       {success && <div className={styles.success} role="status">{success}</div>}
-      {(error || homeError) && <div className={styles.feedback} role="alert">
-        <p>{error || homeError}</p><Button variant="text" onClick={() => setRevision((value) => value + 1)}>Tentar novamente</Button>
+      {error && <div className={styles.feedback} role="alert">
+        <p>{error}</p><Button variant="text" onClick={() => { invalidateApiCache(); setRevision((value) => value + 1); }}>Tentar novamente</Button>
       </div>}
       <section aria-label="Lista de discentes" aria-busy={loading}>
         {loading ? <p className={styles.feedback} role="status">Carregando discentes...</p>

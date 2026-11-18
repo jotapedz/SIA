@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiError } from "../services/api";
+import { ApiError, invalidateApiCache } from "../services/api";
 import { useAuth } from "./useAuth";
 
 type Loader<T> = (token: string, signal: AbortSignal) => Promise<T>;
@@ -17,7 +17,10 @@ export function useApiResource<T>(load: Loader<T> | null) {
   const token = session?.access_token ?? "";
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<State<T>>({ source: null, token: "", data: null, loading: true, error: "", status: null });
-  const reload = useCallback(() => setRevision((value) => value + 1), []);
+  const reload = useCallback(() => {
+    invalidateApiCache();
+    setRevision((value) => value + 1);
+  }, []);
   useEffect(() => {
     if (!load || !token) return;
     const controller = new AbortController();

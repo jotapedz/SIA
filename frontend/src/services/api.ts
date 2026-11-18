@@ -14,9 +14,82 @@ export class ApiError extends Error {
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
+const GET_CACHE_TTL_MS = 30_000;
+const GET_CACHE_MAX_ENTRIES = 200;
+const getCache = new Map<string, { value: unknown; expiresAt: number }>();
+const inflightGet = new Map<string, Promise<unknown>>();
+
+export function invalidateApiCache(): void {
+  getCache.clear();
+  inflightGet.clear();
+}
+
+function withSignal<T>(promise: Promise<T>, signal?: AbortSignal | null): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) {
+    return Promise.reject(new DOMException("The operation was aborted.", "AbortError"));
+  }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new DOMException("The operation was aborted.", "AbortError"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+}
+
+export function prefetchApiRequest(path: string, accessToken: string): void {
+  if (!accessToken) return;
+  void apiRequest(path, accessToken).catch(() => undefined);
+}
+
 export async function apiRequest<T>(path: string, accessToken: string, options: RequestInit = {}): Promise<T> {
-  const response = await apiResponse(path, accessToken, options);
-  return response.json() as Promise<T>;
+  const method = (options.method ?? "GET").toUpperCase();
+  if (method !== "GET") {
+    invalidateApiCache();
+    const response = await apiResponse(path, accessToken, options);
+    return response.json() as Promise<T>;
+  }
+
+  const cacheKey = `${accessToken}::${path}`;
+  const now = Date.now();
+  const cached = getCache.get(cacheKey);
+  if (cached && now < cached.expiresAt) {
+    if (options.signal?.aborted) {
+      throw new DOMException("The operation was aborted.", "AbortError");
+    }
+    return cached.value as T;
+  }
+  if (cached) getCache.delete(cacheKey);
+
+  let shared = inflightGet.get(cacheKey) as Promise<T> | undefined;
+  if (!shared) {
+    const { signal: _ignoredSignal, ...fetchOptions } = options;
+    void _ignoredSignal;
+    shared = (async () => {
+      const response = await apiResponse(path, accessToken, fetchOptions);
+      const data = (await response.json()) as T;
+      if (getCache.size >= GET_CACHE_MAX_ENTRIES) {
+        const oldestKey = getCache.keys().next().value;
+        if (oldestKey !== undefined) getCache.delete(oldestKey);
+      }
+      getCache.set(cacheKey, { value: data, expiresAt: Date.now() + GET_CACHE_TTL_MS });
+      return data;
+    })();
+    inflightGet.set(cacheKey, shared);
+    void shared.finally(() => {
+      inflightGet.delete(cacheKey);
+    }).catch(() => undefined);
+  }
+
+  return withSignal(shared, options.signal);
 }
 
 export async function apiDownload(path: string, accessToken: string): Promise<Blob> {

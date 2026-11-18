@@ -2,6 +2,7 @@ import base64
 import binascii
 import logging
 import re
+import time
 import warnings
 from io import BytesIO
 from urllib.parse import quote
@@ -14,12 +15,17 @@ from starlette.concurrency import run_in_threadpool
 from sqlalchemy import text
 
 from app.core.config import get_settings
+from app.core.http import get_http_client
 from app.services.historico import registrar
 from app.services.discentes import get_discente_or_404
 
 
 logger = logging.getLogger(__name__)
 MAX_PHOTO_BYTES = 2 * 1024 * 1024
+_PRIVATE_BUCKET_TTL_SECONDS = 300.0
+_SIGNED_URL_CACHE_TTL_SECONDS = 180.0
+_private_bucket_cache: dict[tuple[int, str, str], float] = {}
+_signed_url_cache: dict[tuple[int, str, str, int, str], tuple[str, float]] = {}
 
 
 def normalize_photo(value: str) -> bytes:
@@ -77,13 +83,20 @@ class PhotoStorage:
         return response
 
     async def require_private(self):
+        cache_key = (id(self.client), self.base, self.bucket)
+        now = time.monotonic()
+        cached_until = _private_bucket_cache.get(cache_key)
+        if cached_until is not None and now < cached_until:
+            return
         response = await self.request("GET", f"/bucket/{self.bucket}")
         try:
             private = response.json().get("public") is False
         except (ValueError, AttributeError):
             private = False
         if not private:
+            _private_bucket_cache.pop(cache_key, None)
             raise storage_error()
+        _private_bucket_cache[cache_key] = now + _PRIVATE_BUCKET_TTL_SECONDS
 
     async def upload(self, discente_id: int, image: bytes) -> str:
         await self.require_private()
@@ -95,6 +108,11 @@ class PhotoStorage:
     async def signed_url(self, discente_id: int, path: str) -> str:
         if not re.fullmatch(rf"{discente_id}/[a-f0-9]{{32}}\.jpg", path):
             raise storage_error()
+        url_key = (id(self.client), self.base, self.bucket, discente_id, path)
+        now = time.monotonic()
+        cached_url = _signed_url_cache.get(url_key)
+        if cached_url is not None and now < cached_url[1]:
+            return cached_url[0]
         await self.require_private()
         response = await self.request("POST", f"/object/sign/{self.bucket}/{path}", json={"expiresIn": 300})
         try:
@@ -103,7 +121,9 @@ class PhotoStorage:
                 raise ValueError()
         except (KeyError, ValueError, TypeError) as error:
             raise storage_error() from error
-        return self.base + signed
+        full_url = self.base + signed
+        _signed_url_cache[url_key] = (full_url, now + _SIGNED_URL_CACHE_TTL_SECONDS)
+        return full_url
 
     async def remove_safely(self, path: str):
         try:
@@ -133,21 +153,20 @@ async def prepare_photo(value):
 
 
 async def commit_photo_change(session, profile, discente_id, before, image):
-    async with httpx.AsyncClient(timeout=20) as client:
-        storage = PhotoStorage(client)
-        path = None
-        committing = False
-        try:
-            path = await save_photo(session, storage, profile, discente_id, before, image)
-            updated = await get_discente_or_404(session, discente_id)
-            committing = True
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            # se a confirmação do commit falhou, preserva a imagem por precaução
-            if path and not committing:
-                await storage.remove_safely(path)
-            raise
-        if before and before != path:
-            await storage.remove_safely(before)
-        return updated
+    storage = PhotoStorage(get_http_client())
+    path = None
+    committing = False
+    try:
+        path = await save_photo(session, storage, profile, discente_id, before, image)
+        updated = await get_discente_or_404(session, discente_id)
+        committing = True
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        # se a confirmação do commit falhou, preserva a imagem por precaução
+        if path and not committing:
+            await storage.remove_safely(path)
+        raise
+    if before and before != path:
+        await storage.remove_safely(before)
+    return updated

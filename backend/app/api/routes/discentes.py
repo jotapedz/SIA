@@ -1,5 +1,4 @@
 from datetime import date
-import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import text
@@ -7,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
+from app.core.http import get_http_client
 from app.dependencies.profile import get_authorized_profile
 from app.schemas.discente import (
     DiscenteCreate,
@@ -86,24 +86,37 @@ async def list_discentes(
         parameters["admission_to"] = admission_to
 
     where = " AND ".join(conditions)
-    count = await session.execute(
-        text(f'SELECT count(*) FROM public."Discente" WHERE {where}'), parameters
-    )
     result = await session.execute(
         text(
             f"""
-            SELECT {SUMMARY_COLUMNS}
-            FROM public."Discente"
-            WHERE {where}
-            ORDER BY lower(nome), id_discente
-            LIMIT :limit OFFSET :offset
+            WITH filtered AS (
+                SELECT {SUMMARY_COLUMNS}
+                FROM public."Discente"
+                WHERE {where}
+            ),
+            counted AS (
+                SELECT count(*) AS total FROM filtered
+            )
+            SELECT counted.total, f.*
+            FROM counted
+            LEFT JOIN LATERAL (
+                SELECT * FROM filtered
+                ORDER BY lower(full_name), id
+                LIMIT :limit OFFSET :offset
+            ) f ON TRUE
             """
         ),
         {**parameters, "limit": page_size, "offset": (page - 1) * page_size},
     )
+    rows = result.mappings().all()
+    total = rows[0]["total"] if rows else 0
     return DiscenteListResponse(
-        items=[DiscenteSummary(**row) for row in result.mappings().all()],
-        total=count.scalar_one(),
+        items=[
+            DiscenteSummary(**{k: v for k, v in row.items() if k != "total"})
+            for row in rows
+            if row["id"] is not None
+        ],
+        total=total,
         page=page,
         page_size=page_size,
     )
@@ -246,8 +259,7 @@ async def foto_discente(
     discente = await get_discente_or_404(session, discente_id)
     if not discente.photo_path:
         return {"url": None, "expires_in": 300}
-    async with httpx.AsyncClient(timeout=20) as client:
-        url = await PhotoStorage(client).signed_url(discente_id, discente.photo_path)
+    url = await PhotoStorage(get_http_client()).signed_url(discente_id, discente.photo_path)
     return {"url": url, "expires_in": 300}
 
 

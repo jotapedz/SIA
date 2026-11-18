@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 
 from fastapi import HTTPException, status
 from sqlalchemy import bindparam, text
@@ -88,17 +89,32 @@ async def get_relatorio_or_404(
 ) -> RelatorioResponse:
     lock = "FOR UPDATE OF r FOR SHARE OF d" if for_update else ""
     result = await session.execute(text(f"""
-        SELECT {DETAIL_COLUMNS} {REPORT_JOINS}
+        SELECT {DETAIL_COLUMNS},
+               COALESCE((
+                   SELECT json_agg(
+                       json_build_object(
+                           'id', c.id_categoria,
+                           'code', c.codigo,
+                           'name', c.nome,
+                           'group', c.grupo::text,
+                           'section', c.subgrupo,
+                           'order', c.ordem,
+                           'requires_detail', c.permite_detalhe,
+                           'detail', rc.detalhe_objetivo
+                       )
+                       ORDER BY c.ordem, c.id_categoria
+                   )
+                   FROM public."RelatorioCategoria" rc
+                   JOIN public."CategoriaAcessibilidade" c ON c.id_categoria = rc.id_categoria
+                   WHERE rc.id_relatorio = r.id_relatorio
+               ), '[]'::json) AS categories_raw
+        {REPORT_JOINS}
         WHERE r.id_relatorio = :id AND {VISIBLE_REPORT} {lock}
     """), {"id": relatorio_id})
-    report = result.mappings().one_or_none()
-    if report is None:
+    row = result.mappings().one_or_none()
+    if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Relatório não encontrado.")
-    categories = await session.execute(text(f"""
-        SELECT {CATEGORY_COLUMNS}, rc.detalhe_objetivo AS detail
-        FROM public."RelatorioCategoria" rc
-        JOIN public."CategoriaAcessibilidade" c ON c.id_categoria = rc.id_categoria
-        WHERE rc.id_relatorio = :id
-        ORDER BY c.ordem, c.id_categoria
-    """), {"id": relatorio_id})
-    return RelatorioResponse(**report, categories=[RelatorioCategoriaResponse(**row) for row in categories.mappings().all()])
+    report = dict(row)
+    raw_categories = report.pop("categories_raw")
+    parsed_categories = json.loads(raw_categories) if isinstance(raw_categories, str) else (raw_categories or [])
+    return RelatorioResponse(**report, categories=[RelatorioCategoriaResponse(**item) for item in parsed_categories])
