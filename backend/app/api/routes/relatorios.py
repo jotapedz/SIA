@@ -1,4 +1,5 @@
 from datetime import date
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import bindparam, text
@@ -7,17 +8,35 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.dependencies.profile import get_authorized_profile
 from app.schemas.profile import ProfileResponse
-from app.schemas.relatorio import CategoriaResponse, RelatorioCancel, RelatorioCreate, RelatorioListResponse, RelatorioResponse, RelatorioSummary, RelatorioUpdate, ReportType
+from app.schemas.relatorio import (
+    CategoriaResponse,
+    RelatorioCancel,
+    RelatorioCreate,
+    RelatorioListResponse,
+    RelatorioResponse,
+    RelatorioSummary,
+    RelatorioUpdate,
+    ReportType,
+)
 from app.services.profile import get_profile_id
 from app.schemas.historico import HistoricoResponse
 from app.services.historico import registrar, consultar
 from app.services.relatorios import (
-    CADASTRO_SECTIONS, CATEGORY_COLUMNS, REPORT_JOINS, SUMMARY_COLUMNS, VISIBLE_REPORT,
-    get_relatorio_or_404, report_parameters, require_current_report, validate_categories,
+    CADASTRO_SECTIONS,
+    CATEGORY_COLUMNS,
+    REPORT_JOINS,
+    SUMMARY_COLUMNS,
+    VISIBLE_REPORT,
+    get_relatorio_or_404,
+    report_parameters,
+    require_current_report,
+    validate_categories,
 )
 
 
 router = APIRouter(prefix="/v1", tags=["relatorios"])
+_CATEGORIES_CACHE_TTL_SECONDS = 300.0
+_categories_cache: tuple[list[CategoriaResponse], float] | None = None
 
 
 async def require_discente(session: AsyncSession, discente_id: int, *, lock: bool = False) -> None:
@@ -47,8 +66,7 @@ async def list_relatorios(
     profile: ProfileResponse = Depends(get_authorized_profile),
     session: AsyncSession = Depends(get_db_session),
 ) -> RelatorioListResponse:
-    await require_discente(session, discente_id)
-    parameters = {"discente_id": discente_id}
+    parameters: dict[str, object] = {"discente_id": discente_id}
     where = f"r.id_discente = :discente_id AND {VISIBLE_REPORT}"
     if opened_from and opened_to and opened_from > opened_to:
         raise HTTPException(status_code=422, detail="O início do período deve ser anterior ou igual ao fim.")
@@ -67,15 +85,40 @@ async def list_relatorios(
     if opened_to is not None:
         where += " AND r.data_abertura < CAST(:opened_to AS date) + INTERVAL '1 day'"
         parameters["opened_to"] = opened_to
-    count = await session.execute(text(f"SELECT count(*) {REPORT_JOINS} WHERE {where}"), parameters)
+
     result = await session.execute(text(f"""
-        SELECT {SUMMARY_COLUMNS} {REPORT_JOINS} WHERE {where}
-        ORDER BY r.data_abertura DESC, r.id_relatorio DESC
-        LIMIT :limit OFFSET :offset
+        WITH discente_ok AS (
+            SELECT id_discente FROM public."Discente"
+            WHERE id_discente = :discente_id AND data_exclusao IS NULL
+        ),
+        filtered AS (
+            SELECT {SUMMARY_COLUMNS}
+            {REPORT_JOINS}
+            WHERE {where} AND EXISTS (SELECT 1 FROM discente_ok)
+        ),
+        counted AS (
+            SELECT (SELECT count(*) FROM discente_ok) AS discente_exists,
+                   (SELECT count(*) FROM filtered) AS total
+        )
+        SELECT counted.discente_exists, counted.total, f.*
+        FROM counted
+        LEFT JOIN LATERAL (
+            SELECT * FROM filtered
+            ORDER BY opened_at DESC, id DESC
+            LIMIT :limit OFFSET :offset
+        ) f ON TRUE
     """), {**parameters, "limit": page_size, "offset": (page - 1) * page_size})
+    rows = result.mappings().all()
+    if not rows or rows[0]["discente_exists"] == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Discente não encontrado.")
+    total = rows[0]["total"]
     return RelatorioListResponse(
-        items=[RelatorioSummary(**row) for row in result.mappings().all()],
-        total=count.scalar_one(), page=page, page_size=page_size,
+        items=[
+            RelatorioSummary(**{k: v for k, v in row.items() if k not in ("discente_exists", "total")})
+            for row in rows
+            if row["id"] is not None
+        ],
+        total=total, page=page, page_size=page_size,
     )
 
 
@@ -84,13 +127,20 @@ async def list_categorias(
     profile: ProfileResponse = Depends(get_authorized_profile),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[CategoriaResponse]:
+    global _categories_cache
+    use_cache = type(session) is AsyncSession
+    if use_cache and _categories_cache is not None and time.monotonic() < _categories_cache[1]:
+        return _categories_cache[0]
     query = text(f"""
         SELECT {CATEGORY_COLUMNS} FROM public."CategoriaAcessibilidade" c
         WHERE c.ativo = TRUE AND c.subgrupo IN :sections
         ORDER BY c.ordem, c.id_categoria
     """).bindparams(bindparam("sections", expanding=True))
     result = await session.execute(query, {"sections": CADASTRO_SECTIONS})
-    return [CategoriaResponse(**row) for row in result.mappings().all()]
+    categories = [CategoriaResponse(**row) for row in result.mappings().all()]
+    if use_cache:
+        _categories_cache = (categories, time.monotonic() + _CATEGORIES_CACHE_TTL_SECONDS)
+    return categories
 
 
 @router.get(

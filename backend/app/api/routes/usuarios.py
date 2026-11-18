@@ -1,11 +1,11 @@
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
-from app.dependencies.profile import get_authorized_profile
+from app.core.http import get_http_client
+from app.dependencies.profile import get_authorized_profile, invalidate_profile_cache
 from app.schemas.profile import ProfileResponse
 from app.schemas.usuario import UsuarioCreate, UsuarioDelete, UsuarioListResponse, UsuarioResponse, UsuarioRole, UsuarioStatus, UsuarioUpdate
 from app.services.profile import get_profile_id
@@ -40,6 +40,7 @@ async def excluir_usuario(
     await registrar(session, profile, "USUARIO", usuario_id, "Exclusão de usuário",
                     campos=["data_exclusao", "is_active", "status"])
     await session.commit()
+    invalidate_profile_cache()
     return {"deleted": True}
 
 
@@ -63,6 +64,7 @@ async def update_usuario(
             "status": data.status.value, "active": data.status == UsuarioStatus.ATIVO, "id": usuario_id})
     updated = await get_usuario_or_404(session, usuario_id)
     await session.commit()
+    invalidate_profile_cache()
     return updated
 
 
@@ -88,13 +90,33 @@ async def list_usuarios(
         conditions.append("is_active = :is_active")
         parameters["is_active"] = user_status == UsuarioStatus.ATIVO
     where = " AND ".join(conditions)
-    count = await session.execute(text(f'SELECT count(*) FROM public."Perfil" WHERE {where}'), parameters)
     result = await session.execute(text(f"""
-        SELECT {USER_COLUMNS} FROM public."Perfil" WHERE {where}
-        ORDER BY lower(nome), id_perfil LIMIT :limit OFFSET :offset
+        WITH filtered AS (
+            SELECT {USER_COLUMNS}
+            FROM public."Perfil"
+            WHERE {where}
+        ),
+        counted AS (
+            SELECT count(*) AS total FROM filtered
+        )
+        SELECT counted.total, f.*
+        FROM counted
+        LEFT JOIN LATERAL (
+            SELECT * FROM filtered
+            ORDER BY lower(full_name), id
+            LIMIT :limit OFFSET :offset
+        ) f ON TRUE
     """), {**parameters, "limit": page_size, "offset": (page - 1) * page_size})
-    return UsuarioListResponse(items=[UsuarioResponse(**row) for row in result.mappings().all()],
-        total=count.scalar_one(), page=page, page_size=page_size)
+    rows = result.mappings().all()
+    total = rows[0]["total"] if rows else 0
+    return UsuarioListResponse(
+        items=[
+            UsuarioResponse(**{k: v for k, v in row.items() if k != "total"})
+            for row in rows
+            if row["id"] is not None
+        ],
+        total=total, page=page, page_size=page_size,
+    )
 
 
 @router.get("/{usuario_id}", response_model=UsuarioResponse, summary="Consultar usuário (RF11)")
@@ -119,44 +141,44 @@ async def create_usuario(
     existing = await session.execute(text('SELECT 1 FROM public."Perfil" WHERE lower(btrim(email)) = :email LIMIT 1'), {"email": email})
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe um usuário com este e-mail.")
-    async with httpx.AsyncClient(timeout=20) as client:
-        admin = SupabaseAdmin(client)
-        user_id = await admin.create_user(email, data.password.get_secret_value(), data.full_name)
+    admin = SupabaseAdmin(get_http_client())
+    user_id = await admin.create_user(email, data.password.get_secret_value(), data.full_name)
+    try:
+        result = await session.execute(text("""
+            INSERT INTO public."Perfil"
+                (nome, tipo_perfil, email, telefone, senha_hash, status,
+                 data_criacao, data_atualizacao, auth_user_id, is_active)
+            VALUES (:full_name, :role, :email, NULL, 'SUPABASE_AUTH', :status,
+                    NOW(), NOW(), :auth_user_id, :is_active)
+            RETURNING id_perfil
+        """), {"full_name": data.full_name, "role": data.role.value, "email": email,
+            "status": data.status.value, "auth_user_id": user_id, "is_active": data.status == UsuarioStatus.ATIVO})
+        created = await get_usuario_or_404(session, result.scalar_one())
+    except Exception as error:
         try:
-            result = await session.execute(text("""
-                INSERT INTO public."Perfil"
-                    (nome, tipo_perfil, email, telefone, senha_hash, status,
-                     data_criacao, data_atualizacao, auth_user_id, is_active)
-                VALUES (:full_name, :role, :email, NULL, 'SUPABASE_AUTH', :status,
-                        NOW(), NOW(), :auth_user_id, :is_active)
-                RETURNING id_perfil
-            """), {"full_name": data.full_name, "role": data.role.value, "email": email,
-                "status": data.status.value, "auth_user_id": user_id, "is_active": data.status == UsuarioStatus.ATIVO})
-            created = await get_usuario_or_404(session, result.scalar_one())
-        except Exception as error:
-            try:
-                await session.rollback()
-            except SQLAlchemyError:
-                # Ainda nao houve tentativa de commit: compensar a conta Auth
-                # mesmo se a conexao do banco ja tiver sido perdida.
-                pass
-            removed = await admin.remove_created_user(user_id)
-            if not removed:
-                raise provisioning_error("O vínculo do perfil não foi concluído e a conta precisa de regularização no Supabase Auth. Não repita o cadastro antes de verificar.", unconfirmed=True) from error
-            if isinstance(error, IntegrityError):
-                cause = getattr(error.orig, "__cause__", None)
-                constraint = getattr(cause, "constraint_name", None) or getattr(error.orig, "constraint_name", None)
-                if constraint == "perfil_email_normalizado_key":
-                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe um usuário com este e-mail.") from error
-            raise provisioning_error("Não foi possível concluir o vínculo do perfil. A conta recém-criada foi removida; tente novamente após corrigir o banco.") from error
+            await session.rollback()
+        except SQLAlchemyError:
+            # Ainda nao houve tentativa de commit: compensar a conta Auth
+            # mesmo se a conexao do banco ja tiver sido perdida.
+            pass
+        removed = await admin.remove_created_user(user_id)
+        if not removed:
+            raise provisioning_error("O vínculo do perfil não foi concluído e a conta precisa de regularização no Supabase Auth. Não repita o cadastro antes de verificar.", unconfirmed=True) from error
+        if isinstance(error, IntegrityError):
+            cause = getattr(error.orig, "__cause__", None)
+            constraint = getattr(cause, "constraint_name", None) or getattr(error.orig, "constraint_name", None)
+            if constraint == "perfil_email_normalizado_key":
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe um usuário com este e-mail.") from error
+        raise provisioning_error("Não foi possível concluir o vínculo do perfil. A conta recém-criada foi removida; tente novamente após corrigir o banco.") from error
+    try:
+        await session.commit()
+    except SQLAlchemyError as error:
+        # Uma falha na confirmacao pode ocorrer depois do COMMIT no servidor.
+        # Nao apagar a conta Auth quando o resultado do commit e incerto.
         try:
-            await session.commit()
-        except SQLAlchemyError as error:
-            # Uma falha na confirmacao pode ocorrer depois do COMMIT no servidor.
-            # Nao apagar a conta Auth quando o resultado do commit e incerto.
-            try:
-                await session.rollback()
-            except SQLAlchemyError:
-                pass
-            raise provisioning_error("Não foi possível confirmar a finalização do cadastro. Verifique a conta e o perfil antes de tentar novamente.", unconfirmed=True) from error
-        return created
+            await session.rollback()
+        except SQLAlchemyError:
+            pass
+        raise provisioning_error("Não foi possível confirmar a finalização do cadastro. Verifique a conta e o perfil antes de tentar novamente.", unconfirmed=True) from error
+    invalidate_profile_cache()
+    return created

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class ProfileResponse(BaseModel):
@@ -10,3 +10,4 @@ class ProfileResponse(BaseModel):
     phone: str | None
     role: str
     is_active: bool
+    profile_id: int | None = Field(default=None, exclude=True)

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { invalidateApiCache } from "../services/api";
 import { getProfile } from "../services/auth";
 import type { Profile } from "../types/api";
 
@@ -21,6 +22,33 @@ type AuthContextValue = AuthState & {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 const initialState: AuthState = { session: null, profile: null, status: "loading", error: "" };
+const PROFILE_STORAGE_KEY = "sia.validated_profile";
+
+function readCachedProfile(userId: string): Profile | null {
+  try {
+    const raw = window.sessionStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { userId?: string; profile?: Profile };
+    if (parsed.userId === userId && parsed.profile && parsed.profile.is_active) {
+      return parsed.profile;
+    }
+  } catch {
+    // ignora falha de leitura de sessionStorage
+  }
+  return null;
+}
+
+function writeCachedProfile(userId: string, profile: Profile | null): void {
+  try {
+    if (!profile) {
+      window.sessionStorage.removeItem(PROFILE_STORAGE_KEY);
+    } else {
+      window.sessionStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ userId, profile }));
+    }
+  } catch {
+    // ignora falha de escrita em sessionStorage
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(initialState);
@@ -31,11 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const recovery = useRef(window.location.pathname === "/redefinir-senha");
   const lastError = useRef("");
 
-  const validateSession = useCallback(async (session: Session | null): Promise<boolean> => {
+  const validateSession = useCallback(async (session: Session | null, allowOptimistic = true): Promise<boolean> => {
     const id = ++requestId.current;
     pending.current?.abort();
     if (!session) {
       recovery.current = false;
+      writeCachedProfile("", null);
+      invalidateApiCache();
       setState({ ...initialState, status: "anonymous" });
       return false;
     }
@@ -45,20 +75,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const controller = new AbortController();
     pending.current = controller;
-    setState((previous) => ({
-      session,
-      profile: previous.session?.user.id === session.user.id ? previous.profile : null,
-      status: previous.session?.user.id === session.user.id && previous.profile ? "authenticated" : "loading",
-      error: "",
-    }));
+    setState((previous) => {
+      const existingProfile =
+        previous.session?.user.id === session.user.id && previous.profile
+          ? previous.profile
+          : allowOptimistic
+            ? readCachedProfile(session.user.id)
+            : null;
+      return {
+        session,
+        profile: existingProfile,
+        status: existingProfile ? "authenticated" : "loading",
+        error: "",
+      };
+    });
     try {
       const profile = await getProfile(session.access_token, controller.signal);
       if (id !== requestId.current) return false;
       lastError.current = "";
+      writeCachedProfile(session.user.id, profile);
       setState({ session, profile, status: "authenticated", error: "" });
       return true;
     } catch (error) {
       if (controller.signal.aborted || id !== requestId.current) return false;
+      writeCachedProfile(session.user.id, null);
+      invalidateApiCache();
       lastError.current = error instanceof Error ? error.message : "Não foi possível validar seu acesso.";
       setState({ session, profile: null, status: "error", error: lastError.current });
       return false;
@@ -98,10 +139,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     signingIn.current = true;
     recovery.current = false;
+    writeCachedProfile("", null);
+    invalidateApiCache();
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error || !data.session) throw new Error("E-mail ou senha incorretos. Confira suas credenciais.");
-      if (!await validateSession(data.session)) throw new Error(lastError.current || "Perfil sem acesso autorizado.");
+      if (!await validateSession(data.session, false)) throw new Error(lastError.current || "Perfil sem acesso autorizado.");
     } finally {
       signingIn.current = false;
     }
@@ -114,10 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function retry() {
+    invalidateApiCache();
     try {
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
-      await validateSession(data.session);
+      await validateSession(data.session, false);
     } catch {
       setState((previous) => ({ ...previous, profile: null, status: "error", error: "Não foi possível restaurar sua sessão. Tente novamente." }));
     }

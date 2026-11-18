@@ -6,6 +6,9 @@ from app.schemas.profile import ProfileResponse
 
 
 async def get_profile_id(session: AsyncSession, profile: ProfileResponse) -> int:
+    profile_id = getattr(profile, "profile_id", None)
+    if isinstance(profile_id, int):
+        return profile_id
     result = await session.execute(text("""
         SELECT id_perfil FROM public."Perfil"
         WHERE auth_user_id = :auth_user_id AND is_active = TRUE AND data_exclusao IS NULL
